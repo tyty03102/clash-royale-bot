@@ -1,0 +1,19 @@
+{
+  "type": "module",
+  "name": "clash-royale-discord-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for Clash Royale stats and player comparison",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "node --watch bot.js",
+    "setup": "node setup.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "node-fetch": "^3.3.2"
+  },
+  "keywords": ["discord", "bot", "clash-royale", "stats"],
+  "author": "Your Name",
+  "license": "MIT"
+}
