@@ -31,11 +31,10 @@ export class DeckImageGenerator {
     // Draw deck grid
     await this.drawDeckGrid(ctx, playerStats.currentDeck || []);
     
-    // Generate filename and save
+    // Generate filename and save as PNG
     const filename = `deck_${playerStats.tag.replace(/[^a-zA-Z0-9]/g, '')}_${Date.now()}.png`;
     const filepath = path.join(this.outputDir, filename);
     
-    // Save as PNG
     const buffer = canvas.toBuffer('image/png');
     fs.writeFileSync(filepath, buffer);
     
@@ -49,15 +48,18 @@ export class DeckImageGenerator {
   drawBackground(ctx) {
     // Create gradient background
     const gradient = ctx.createLinearGradient(0, 0, 0, this.height);
-    gradient.addColorStop(0, '#667eea');
-    gradient.addColorStop(1, '#764ba2');
-    
+    gradient.addColorStop(0, '#2d3748');
+    gradient.addColorStop(1, '#1a202c');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, this.width, this.height);
     
-    // Add some decorative elements
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.fillRect(20, 20, this.width - 40, this.height - 40);
+    // Add some subtle pattern
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+    for (let i = 0; i < this.width; i += 40) {
+      for (let j = 0; j < this.height; j += 40) {
+        ctx.fillRect(i, j, 1, 1);
+      }
+    }
   }
 
   async drawPlayerInfo(ctx, playerStats) {
@@ -106,6 +108,9 @@ export class DeckImageGenerator {
     const startY = 220;
     const startX = (this.width - (cardWidth * cardsPerRow)) / 2;
     
+    // Debug: Log the deck structure
+    console.log('Deck data structure:', JSON.stringify(deck, null, 2));
+    
     for (let i = 0; i < deck.length; i++) {
       const row = Math.floor(i / cardsPerRow);
       const col = i % cardsPerRow;
@@ -117,8 +122,11 @@ export class DeckImageGenerator {
   }
 
   async drawCard(ctx, card, x, y, width, height) {
-    // Card background
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    // Debug: Log individual card data
+    console.log(`Drawing card:`, card);
+    
+    // Card background with better styling
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.fillRect(x, y, width, height);
     
     // Card border based on rarity
@@ -127,29 +135,76 @@ export class DeckImageGenerator {
     ctx.lineWidth = 3;
     ctx.strokeRect(x, y, width, height);
     
-    // Card image placeholder (since we can't load external images easily)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.fillRect(x + 10, y + 10, width - 20, width - 20);
+    // Try to load and display actual card image
+    try {
+      // Check if we have the card ID, if not try to construct it from name
+      let cardId = card.id;
+      if (!cardId && card.name) {
+        // Convert card name to ID format (lowercase, no spaces, no special chars)
+        cardId = card.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      }
+      
+      if (cardId) {
+        const imageUrl = `https://api-assets.clashroyale.com/cards/300/${cardId}.png`;
+        console.log(`Attempting to load card image from: ${imageUrl}`);
+        
+        const cardImage = await loadImage(imageUrl);
+        
+        // Calculate image dimensions to fit in card
+        const imageSize = width - 20;
+        const imageX = x + 10;
+        const imageY = y + 10;
+        
+        // Draw card image
+        ctx.drawImage(cardImage, imageX, imageY, imageSize, imageSize);
+        
+        // Add a subtle overlay for better text readability
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.fillRect(imageX, imageY, imageSize, imageSize);
+      } else {
+        throw new Error('No card ID available');
+      }
+      
+    } catch (error) {
+      // Fallback to placeholder if image fails to load
+      console.log(`Failed to load image for card ${card.name}:`, error.message);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.fillRect(x + 10, y + 10, width - 20, width - 20);
+      
+      // Add card name as placeholder text
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.font = 'bold 12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(card.name, x + width/2, y + width/2 + 10);
+    }
     
-    // Card name
+    // Card name - positioned below the image area
     ctx.fillStyle = '#ffd700';
-    ctx.font = 'bold 14px Arial';
+    ctx.font = 'bold 12px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText(card.name, x + width/2, y + width + 30);
+    
+    // Truncate long card names to fit
+    let displayName = card.name;
+    if (displayName.length > 12) {
+      displayName = displayName.substring(0, 10) + '...';
+    }
+    
+    ctx.fillText(displayName, x + width/2, y + width + 25);
     
     // Card level
     ctx.fillStyle = '#b8c5d6';
-    ctx.font = '12px Arial';
-    ctx.fillText(`Lvl ${card.level}`, x + width/2, y + width + 50);
+    ctx.font = '10px Arial';
+    ctx.fillText(`Lvl ${card.level}`, x + width/2, y + width + 40);
     
-    // Elixir cost
+    // Elixir cost circle
     ctx.fillStyle = '#3182ce';
     ctx.beginPath();
     ctx.arc(x + width/2, y + height - 20, 15, 0, 2 * Math.PI);
     ctx.fill();
     
+    // Elixir cost text
     ctx.fillStyle = 'white';
-    ctx.font = 'bold 14px Arial';
+    ctx.font = 'bold 12px Arial';
     ctx.textAlign = 'center';
     ctx.fillText(card.elixirCost.toString(), x + width/2, y + height - 18);
   }
