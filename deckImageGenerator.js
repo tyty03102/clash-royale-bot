@@ -46,12 +46,16 @@ export class DeckImageGenerator {
   }
 
   drawBackground(ctx) {
-    // Create gradient background
+    // Create gradient background - match HTML version
     const gradient = ctx.createLinearGradient(0, 0, 0, this.height);
-    gradient.addColorStop(0, '#2d3748');
-    gradient.addColorStop(1, '#1a202c');
+    gradient.addColorStop(0, '#667eea');
+    gradient.addColorStop(1, '#764ba2');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, this.width, this.height);
+    
+    // Add subtle decorative elements like HTML version
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.fillRect(20, 20, this.width - 40, this.height - 40);
     
     // Add some subtle pattern
     ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
@@ -63,19 +67,20 @@ export class DeckImageGenerator {
   }
 
   async drawPlayerInfo(ctx, playerStats) {
-    // Player name
+    // Player name - match HTML styling
     ctx.fillStyle = '#ffd700';
-    ctx.font = 'bold 36px Arial';
+    ctx.font = 'bold 48px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText(playerStats.name, this.width / 2, 80);
+    ctx.textBaseline = 'top';
+    ctx.fillText(playerStats.name, this.width / 2, 40);
     
-    // Clan name
+    // Clan name - match HTML styling
     ctx.fillStyle = '#b8c5d6';
     ctx.font = '24px Arial';
-    ctx.fillText(playerStats.clan?.name || 'No Clan', this.width / 2, 110);
+    ctx.fillText(playerStats.clan?.name || 'No Clan', this.width / 2, 90);
     
-    // Trophy info
-    const trophyY = 150;
+    // Trophy info - match HTML styling
+    const trophyY = 140;
     const trophyWidth = 80;
     const spacing = 20;
     const startX = (this.width - (trophyWidth * 3 + spacing * 2)) / 2;
@@ -86,26 +91,27 @@ export class DeckImageGenerator {
     ctx.fillStyle = 'white';
     ctx.font = 'bold 16px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText(Math.max(0, playerStats.trophies - 30).toString(), startX + trophyWidth/2, trophyY + 25);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(Math.max(0, playerStats.trophies - 30).toString(), startX + trophyWidth/2, trophyY + 20);
     
     // Trophy change
     ctx.fillStyle = '#3182ce';
     ctx.fillRect(startX + trophyWidth + spacing, trophyY, trophyWidth, 40);
     ctx.fillStyle = 'white';
-    ctx.fillText('+30', startX + trophyWidth + spacing + trophyWidth/2, trophyY + 25);
+    ctx.fillText('+30', startX + trophyWidth + spacing + trophyWidth/2, trophyY + 20);
     
     // Current trophies
     ctx.fillStyle = '#4a5568';
     ctx.fillRect(startX + (trophyWidth + spacing) * 2, trophyY, trophyWidth, 40);
     ctx.fillStyle = 'white';
-    ctx.fillText(playerStats.trophies.toString(), startX + (trophyWidth + spacing) * 2 + trophyWidth/2, trophyY + 25);
+    ctx.fillText(playerStats.trophies.toString(), startX + (trophyWidth + spacing) * 2 + trophyWidth/2, trophyY + 20);
   }
 
   async drawDeckGrid(ctx, deck) {
     const cardWidth = 120;
     const cardHeight = 160;
     const cardsPerRow = 4;
-    const startY = 220;
+    const startY = 200; // Adjusted to work with new player info layout
     const startX = (this.width - (cardWidth * cardsPerRow)) / 2;
     
     // Debug: Log the deck structure
@@ -125,8 +131,11 @@ export class DeckImageGenerator {
     // Debug: Log individual card data
     console.log(`Drawing card:`, card);
     
-    // Card background with better styling
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    // Card background with better styling - match HTML version
+    const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+    gradient.addColorStop(0, '#667eea');
+    gradient.addColorStop(1, '#764ba2');
+    ctx.fillStyle = gradient;
     ctx.fillRect(x, y, width, height);
     
     // Card border based on rarity
@@ -137,20 +146,27 @@ export class DeckImageGenerator {
     
     // Try to load and display actual card image
     try {
-      // Check if we have the card ID, if not try to construct it from name
-      let cardId = card.id;
-      if (!cardId && card.name) {
-        // Convert card name to ID format (lowercase, no spaces, no special chars)
-        cardId = card.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      // Use the card's iconUrls if available (this is what the HTML version uses)
+      let imageUrl = null;
+      
+      if (card.iconUrls && card.iconUrls.medium) {
+        imageUrl = card.iconUrls.medium;
+      } else if (card.iconUrls && card.iconUrls['300']) {
+        imageUrl = card.iconUrls['300'];
+      } else if (card.iconUrl) {
+        imageUrl = card.iconUrl;
+      } else {
+        // Fallback: try to construct from name (less reliable)
+        const cardId = card.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        imageUrl = `https://api-assets.clashroyale.com/cards/300/${cardId}.png`;
       }
       
-      if (cardId) {
-        const imageUrl = `https://api-assets.clashroyale.com/cards/300/${cardId}.png`;
+      if (imageUrl) {
         console.log(`Attempting to load card image from: ${imageUrl}`);
         
         const cardImage = await loadImage(imageUrl);
         
-        // Calculate image dimensions to fit in card
+        // Calculate image dimensions to fit in card with padding
         const imageSize = width - 20;
         const imageX = x + 10;
         const imageY = y + 10;
@@ -158,45 +174,43 @@ export class DeckImageGenerator {
         // Draw card image
         ctx.drawImage(cardImage, imageX, imageY, imageSize, imageSize);
         
-        // Add a subtle overlay for better text readability
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        // Add a subtle overlay for better text readability (like HTML version)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
         ctx.fillRect(imageX, imageY, imageSize, imageSize);
       } else {
-        throw new Error('No card ID available');
+        throw new Error('No image URL available');
       }
       
     } catch (error) {
       // Fallback to placeholder if image fails to load
       console.log(`Failed to load image for card ${card.name}:`, error.message);
+      
+      // Create a nicer placeholder that matches the HTML styling
       ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
       ctx.fillRect(x + 10, y + 10, width - 20, width - 20);
       
       // Add card name as placeholder text
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-      ctx.font = 'bold 12px Arial';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.font = 'bold 14px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(card.name, x + width/2, y + width/2 + 10);
     }
     
-    // Card name - positioned below the image area
+    // Card name - positioned below the image area (like HTML version)
     ctx.fillStyle = '#ffd700';
-    ctx.font = 'bold 12px Arial';
+    ctx.font = 'bold 14px Arial';
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
     
-    // Truncate long card names to fit
-    let displayName = card.name;
-    if (displayName.length > 12) {
-      displayName = displayName.substring(0, 10) + '...';
-    }
+    // Don't truncate names - show full names like HTML version
+    ctx.fillText(card.name, x + width/2, y + width + 15);
     
-    ctx.fillText(displayName, x + width/2, y + width + 25);
-    
-    // Card level
+    // Card level (like HTML version)
     ctx.fillStyle = '#b8c5d6';
-    ctx.font = '10px Arial';
-    ctx.fillText(`Lvl ${card.level}`, x + width/2, y + width + 40);
+    ctx.font = '12px Arial';
+    ctx.fillText(`Lvl ${card.level}`, x + width/2, y + width + 35);
     
-    // Elixir cost circle
+    // Elixir cost circle (like HTML version)
     ctx.fillStyle = '#3182ce';
     ctx.beginPath();
     ctx.arc(x + width/2, y + height - 20, 15, 0, 2 * Math.PI);
@@ -206,7 +220,8 @@ export class DeckImageGenerator {
     ctx.fillStyle = 'white';
     ctx.font = 'bold 12px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText(card.elixirCost.toString(), x + width/2, y + height - 18);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(card.elixirCost.toString(), x + width/2, y + height - 20);
   }
 
   getRarityColor(rarity) {
