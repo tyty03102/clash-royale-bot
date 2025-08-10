@@ -3,7 +3,7 @@ import { config } from "./config.js";
 
 export class ClashAPI {
   constructor() {
-    this.baseUrl = "https://api.clashroyale.com/v1";
+    this.baseUrl = "https://proxy.royaleapi.dev/v1";
     this.token = config.CLASH_API_TOKEN;
   }
 
