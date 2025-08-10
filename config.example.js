@@ -11,6 +11,9 @@ export const config = {
   // Bot prefix for commands
   PREFIX: "!cr",
   
+  // Admin role ID (Discord role ID that can use admin commands)
+  ADMIN_ROLE_ID: "your_admin_role_id_here",
+  
   // Embed colors
   COLORS: {
     PRIMARY: 0x00ff00,    // Green

@@ -91,6 +91,9 @@ async function handleCommand(message, command, args) {
     case 'reload':
       await handleReload(message);
       break;
+    case 'adminlogin':
+      await handleAdminLogin(message, args);
+      break;
     default:
       const errorEmbed = embedBuilder.createErrorEmbed(
         new Error(`Unknown command: ${command}. Use \`${config.PREFIX} help\` for available commands.`),
@@ -401,6 +404,16 @@ async function handleHelp(message) {
 
 // Save command handler (admin only)
 async function handleSave(message) {
+  // Check admin permissions
+  if (!hasAdminPermission(message.member)) {
+    const errorEmbed = embedBuilder.createErrorEmbed(
+      new Error('You do not have permission to use this command. This command is restricted to administrators only.'),
+      message.author
+    );
+    await message.reply({ embeds: [errorEmbed] });
+    return;
+  }
+
   try {
     await userManager.saveUsersToFile();
     const successEmbed = embedBuilder.createSuccessEmbed('User data saved successfully!', message.author);
@@ -413,10 +426,69 @@ async function handleSave(message) {
 
 // Reload command handler (admin only)
 async function handleReload(message) {
+  // Check admin permissions
+  if (!hasAdminPermission(message.member)) {
+    const errorEmbed = embedBuilder.createErrorEmbed(
+      new Error('You do not have permission to use this command. This command is restricted to administrators only.'),
+      message.author
+    );
+    await message.reply({ embeds: [errorEmbed] });
+    return;
+  }
+
   try {
     await userManager.reloadUsers();
     const loggedInUsers = userManager.getAllLoggedInUsers();
     const successEmbed = embedBuilder.createSuccessEmbed(`User data reloaded successfully! ${loggedInUsers.length} user(s) loaded.`, message.author);
+    await message.reply({ embeds: [successEmbed] });
+  } catch (error) {
+    const errorEmbed = embedBuilder.createErrorEmbed(error, message.author);
+    await message.reply({ embeds: [errorEmbed] });
+  }
+}
+
+// Admin login command handler (admin only)
+async function handleAdminLogin(message, args) {
+  // Check admin permissions
+  if (!hasAdminPermission(message.member)) {
+    const errorEmbed = embedBuilder.createErrorEmbed(
+      new Error('You do not have permission to use this command. This command is restricted to administrators only.'),
+      message.author
+    );
+    await message.reply({ embeds: [errorEmbed] });
+    return;
+  }
+
+  if (args.length < 2) {
+    const errorEmbed = embedBuilder.createErrorEmbed(
+      new Error('Please provide both a Discord member mention and a Clash Royale player tag. Usage: `!cr adminlogin @username <player_tag>`'),
+      message.author
+    );
+    await message.reply({ embeds: [errorEmbed] });
+    return;
+  }
+
+  // Get mentioned user
+  const mentionedUser = message.mentions.users.first();
+  if (!mentionedUser) {
+    const errorEmbed = embedBuilder.createErrorEmbed(
+      new Error('Please mention a Discord user to log in. Usage: `!cr adminlogin @username <player_tag>`'),
+      message.author
+    );
+    await message.reply({ embeds: [errorEmbed] });
+    return;
+  }
+
+  const playerTag = args[1];
+  
+  try {
+    // Check rate limit
+    checkRateLimit(message.author.id);
+    
+    // Force login the mentioned user
+    const playerStats = await userManager.adminLoginUser(mentionedUser.id, playerTag, clashAPI, mentionedUser);
+    
+    const successEmbed = embedBuilder.createAdminLoginSuccessEmbed(playerStats, mentionedUser, message.author);
     await message.reply({ embeds: [successEmbed] });
   } catch (error) {
     const errorEmbed = embedBuilder.createErrorEmbed(error, message.author);
@@ -476,9 +548,31 @@ async function handleDeckButton(interaction) {
 
     const playerTag = userManager.getUserPlayerTag(interaction.user.id);
     const playerStats = await clashAPI.getPlayerStats(playerTag);
-    const deckEmbed = embedBuilder.createDeckEmbed(playerStats, interaction.user);
     
-    await interaction.reply({ embeds: [deckEmbed], ephemeral: true });
+    // Generate deck image instead of embed
+    const deckImage = await deckImageGenerator.generateDeckImage(playerStats);
+    
+    // Send the PNG image as an attachment
+    await interaction.reply({
+      content: `🃏 **${playerStats.name}'s Current Deck**`,
+      files: [{
+        attachment: deckImage.filepath,
+        name: deckImage.filename
+      }],
+      ephemeral: true
+    });
+    
+    // Clean up the file after sending
+    setTimeout(() => {
+      try {
+        if (fs.existsSync(deckImage.filepath)) {
+          fs.unlinkSync(deckImage.filepath);
+        }
+      } catch (cleanupError) {
+        console.error('Error cleaning up deck image file:', cleanupError);
+      }
+    }, 60000); // Clean up after 1 minute
+    
   } catch (error) {
     const errorEmbed = embedBuilder.createErrorEmbed(error, interaction.user);
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
@@ -562,6 +656,23 @@ function checkRateLimit(userId) {
   
   userLimit.count++;
   return true;
+}
+
+// Admin permission check function
+function hasAdminPermission(member) {
+  if (!member) return false;
+  
+  // Check if user has admin role
+  if (config.ADMIN_ROLE_ID && member.roles.cache.has(config.ADMIN_ROLE_ID)) {
+    return true;
+  }
+  
+  // Check if user has administrator permission
+  if (member.permissions.has('Administrator')) {
+    return true;
+  }
+  
+  return false;
 }
 
 // Modal handler for compare

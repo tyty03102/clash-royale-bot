@@ -48,6 +48,47 @@ export class UserManager {
     }
   }
 
+  // Admin login a user with their Clash Royale player tag (bypasses existing user checks)
+  async adminLoginUser(discordUserId, playerTag, clashAPI, discordUser = null) {
+    try {
+      // Validate player tag
+      if (!clashAPI.validatePlayerTag(playerTag)) {
+        throw new Error("Invalid player tag format. Player tags should be 8-9 characters long.");
+      }
+
+      // Fetch player data to verify the tag is valid
+      const playerStats = await clashAPI.getPlayerStats(playerTag);
+      
+      // If this player tag is already logged in by another user, log them out first
+      const existingUser = this.getDiscordUserByPlayerTag(playerTag);
+      if (existingUser && existingUser.discordUserId !== discordUserId) {
+        console.log(`Admin force login: Logging out existing user ${existingUser.discordUsername} from player tag ${playerTag}`);
+        this.users.delete(existingUser.discordUserId);
+      }
+      
+      // Store user data with Discord account information
+      this.users.set(discordUserId, {
+        playerTag: playerStats.tag,
+        playerName: playerStats.name,
+        discordUserId: discordUserId,
+        discordUsername: discordUser ? discordUser.username : null,
+        discordDisplayName: discordUser ? discordUser.displayName : null,
+        discordAvatar: discordUser ? discordUser.displayAvatarURL() : null,
+        loginTime: new Date(),
+        lastUpdated: new Date(),
+        adminForced: true // Mark that this was an admin-forced login
+      });
+
+      // Save to file
+      await this.saveUsersToFile();
+
+      return playerStats;
+    } catch (error) {
+      console.error("Error admin logging in user:", error);
+      throw error;
+    }
+  }
+
   // Logout a user
   async logoutUser(discordUserId) {
     const wasLoggedIn = this.users.has(discordUserId);

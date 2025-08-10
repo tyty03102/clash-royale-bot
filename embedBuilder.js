@@ -266,6 +266,28 @@ export class EmbedBuilder {
     return embed;
   }
 
+  // Create admin login success embed
+  createAdminLoginSuccessEmbed(playerStats, targetUser, adminUser) {
+    const embed = new DiscordEmbedBuilder()
+      .setColor(this.colors.WARNING)
+      .setTitle('🔐 Admin Force Login Successful')
+      .setDescription(`**${targetUser.username}** has been forcefully logged in as **${playerStats.name}** by an administrator.`)
+      .addFields(
+        { name: '🏆 **Player Info**', value: `Tag: \`${playerStats.tag}\`\nLevel: **${playerStats.expLevel}**\nArena: **${playerStats.arena.name}**`, inline: true },
+        { name: '📊 **Stats**', value: `Trophies: **${playerStats.trophies.toLocaleString()}**\nBest: **${playerStats.bestTrophies.toLocaleString()}**\nWins: **${playerStats.wins.toLocaleString()}**`, inline: true },
+        { name: '🏰 **Clan**', value: playerStats.clan ? `**${playerStats.clan.name}**` : 'No Clan', inline: true },
+        { name: '👑 **Admin Action**', value: `Force login performed by **${adminUser.username}**\nThis action bypassed normal login restrictions.`, inline: false }
+      )
+      .setThumbnail('https://api-assets.clashroyale.com/arenas/54000009.png')
+      .setFooter({ 
+        text: `Admin action by ${adminUser.username}`,
+        iconURL: adminUser.displayAvatarURL()
+      })
+      .setTimestamp();
+
+    return embed;
+  }
+
   // Create error embed
   createErrorEmbed(error, discordUser = null) {
     const embed = new DiscordEmbedBuilder()
@@ -307,7 +329,7 @@ export class EmbedBuilder {
         { name: '📊 **Stats**', value: '`!cr stats` - View your stats\n`!cr stats <player_tag>` - View any player\'s stats\n`!cr stats @username` - View logged-in Discord user\'s stats\n`!cr deck` - Generate deck image\n`!cr deck <player_tag>` - Generate deck image for any player\n`!cr deck @username` - Generate deck image for Discord user', inline: false },
         { name: '⚔️ **Comparison**', value: '`!cr compare @username` - Compare your stats with another Discord user\n`!cr compare @user1 @user2` - Compare two Discord users', inline: false },
         { name: '👥 **Server**', value: '`!cr players` - List all logged in players in this server', inline: false },
-        { name: '💾 **Admin**', value: '`!cr save` - Save user data to file\n`!cr reload` - Reload user data from file', inline: false },
+        { name: '💾 **Admin**', value: '`!cr save` - Save user data to file\n`!cr reload` - Reload user data from file\n`!cr adminlogin @username <player_tag>` - Force login a Discord user (Admin only)', inline: false },
         { name: '❓ **Help**', value: '`!cr help` - Show this help message', inline: false }
       )
       .addFields({
