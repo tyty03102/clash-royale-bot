@@ -79,32 +79,37 @@ export class DeckImageGenerator {
     ctx.font = '24px Arial';
     ctx.fillText(playerStats.clan?.name || 'No Clan', this.width / 2, 90);
     
-    // Trophy info - match HTML styling
-    const trophyY = 140;
-    const trophyWidth = 80;
+    // Average elixir cost info - replace trophy display
+    const avgElixirY = 140;
+    const elixirWidth = 120;
     const spacing = 20;
-    const startX = (this.width - (trophyWidth * 3 + spacing * 2)) / 2;
+    const startX = (this.width - (elixirWidth * 3 + spacing * 2)) / 2;
     
-    // Previous trophies
+    // Calculate average elixir cost
+    const deck = playerStats.currentDeck || [];
+    const totalElixir = deck.reduce((sum, card) => sum + (card.elixirCost || 0), 0);
+    const avgElixir = deck.length > 0 ? (totalElixir / deck.length).toFixed(1) : '0.0';
+    
+    // Previous average (placeholder for visual consistency)
     ctx.fillStyle = '#4a5568';
-    ctx.fillRect(startX, trophyY, trophyWidth, 40);
+    ctx.fillRect(startX, avgElixirY, elixirWidth, 40);
     ctx.fillStyle = 'white';
     ctx.font = 'bold 16px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(Math.max(0, playerStats.trophies - 30).toString(), startX + trophyWidth/2, trophyY + 20);
+    ctx.fillText('Avg', startX + elixirWidth/2, avgElixirY + 20);
     
-    // Trophy change
+    // Current average elixir cost
     ctx.fillStyle = '#3182ce';
-    ctx.fillRect(startX + trophyWidth + spacing, trophyY, trophyWidth, 40);
+    ctx.fillRect(startX + elixirWidth + spacing, avgElixirY, elixirWidth, 40);
     ctx.fillStyle = 'white';
-    ctx.fillText('+30', startX + trophyWidth + spacing + trophyWidth/2, trophyY + 20);
+    ctx.fillText(avgElixir, startX + elixirWidth + spacing + elixirWidth/2, avgElixirY + 20);
     
-    // Current trophies
+    // Total elixir cost
     ctx.fillStyle = '#4a5568';
-    ctx.fillRect(startX + (trophyWidth + spacing) * 2, trophyY, trophyWidth, 40);
+    ctx.fillRect(startX + (elixirWidth + spacing) * 2, avgElixirY, elixirWidth, 40);
     ctx.fillStyle = 'white';
-    ctx.fillText(playerStats.trophies.toString(), startX + (trophyWidth + spacing) * 2 + trophyWidth/2, trophyY + 20);
+    ctx.fillText(`Total: ${totalElixir}`, startX + (elixirWidth + spacing) * 2 + elixirWidth/2, avgElixirY + 20);
   }
 
   async drawDeckGrid(ctx, deck) {
@@ -216,7 +221,7 @@ export class DeckImageGenerator {
     // Elixir cost circle (like HTML version)
     ctx.fillStyle = '#3182ce';
     ctx.beginPath();
-    ctx.arc(x + width/2, y + height - 25, 15, 0, 2 * Math.PI);
+    ctx.arc(x + width/2, y + height - 20, 15, 0, 2 * Math.PI);
     ctx.fill();
     
     // Elixir cost text
@@ -224,7 +229,7 @@ export class DeckImageGenerator {
     ctx.font = 'bold 12px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(card.elixirCost.toString(), x + width/2, y + height - 25);
+    ctx.fillText(card.elixirCost.toString(), x + width/2, y + height - 20);
   }
 
   getRarityColor(rarity) {
