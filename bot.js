@@ -244,9 +244,9 @@ async function handleDeck(message, args) {
     // Generate deck image instead of embed
     const deckImage = await deckImageGenerator.generateDeckImage(playerStats);
     
-    // Send the HTML file as an attachment
+    // Send the PNG image as an attachment
     await message.reply({
-      content: `🃏 **${playerStats.name}'s Current Deck**\n📁 Deck image generated! Open the HTML file to view.`,
+      content: `🃏 **${playerStats.name}'s Current Deck**`,
       files: [{
         attachment: deckImage.filepath,
         name: deckImage.filename
