@@ -20,8 +20,8 @@ A feature-rich Discord bot for viewing and comparing Clash Royale player statist
 | `!cr logout` | Logout from your account | `!cr logout` |
 | `!cr stats` | View your stats (requires login) | `!cr stats` |
 | `!cr stats <player_tag>` | View another player's stats | `!cr stats #V0VCP2909` |
-| `!cr deck` | View your current deck (requires login) | `!cr deck` |
-| `!cr deck <player_tag>` | View another player's deck | `!cr deck #V0VCP2909` |
+| `!cr deck` | Generate deck image (requires login) | `!cr deck` |
+| `!cr deck <player_tag>` | Generate deck image for any player | `!cr deck #V0VCP2909` |
 | `!cr compare <player_tag>` | Compare your stats with another player | `!cr compare #V0VCP2909` |
 | `!cr compare <player1> <player2>` | Compare two players | `!cr compare #V0VCP2909 #ABC123` |
 | `!cr players` | List all logged-in players in the server | `!cr players` |

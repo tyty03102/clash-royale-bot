@@ -3,6 +3,8 @@ import { config } from './config.js';
 import { ClashAPI } from './clashApi.js';
 import { UserManager } from './userManager.js';
 import { EmbedBuilder } from './embedBuilder.js';
+import { DeckImageGenerator } from './deckImageGenerator.js';
+import fs from 'fs';
 
 // Create Discord client
 const client = new Client({
@@ -17,6 +19,7 @@ const client = new Client({
 const clashAPI = new ClashAPI();
 const userManager = new UserManager();
 const embedBuilder = new EmbedBuilder();
+const deckImageGenerator = new DeckImageGenerator();
 
 // Rate limiting
 const rateLimits = new Map(); // userId -> { count: number, resetTime: number }
@@ -237,9 +240,30 @@ async function handleDeck(message, args) {
     checkRateLimit(message.author.id);
     
     const playerStats = await clashAPI.getPlayerStats(playerTag);
-    const deckEmbed = embedBuilder.createDeckEmbed(playerStats, message.author);
     
-    await message.reply({ embeds: [deckEmbed] });
+    // Generate deck image instead of embed
+    const deckImage = await deckImageGenerator.generateDeckImage(playerStats);
+    
+    // Send the HTML file as an attachment
+    await message.reply({
+      content: `🃏 **${playerStats.name}'s Current Deck**\n📁 Deck image generated! Open the HTML file to view.`,
+      files: [{
+        attachment: deckImage.filepath,
+        name: deckImage.filename
+      }]
+    });
+    
+    // Clean up the file after sending
+    setTimeout(() => {
+      try {
+        if (fs.existsSync(deckImage.filepath)) {
+          fs.unlinkSync(deckImage.filepath);
+        }
+      } catch (cleanupError) {
+        console.error('Error cleaning up deck image file:', cleanupError);
+      }
+    }, 60000); // Clean up after 1 minute
+    
   } catch (error) {
     const errorEmbed = embedBuilder.createErrorEmbed(error, message.author);
     await message.reply({ embeds: [errorEmbed] });

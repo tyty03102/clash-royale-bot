@@ -55,19 +55,19 @@ The Clash Royale Discord Bot allows Discord server members to link their Clash R
 **Notes**: The mentioned Discord user must be logged in with their Clash Royale account
 
 #### `!cr deck`
-**Description**: View your current deck composition  
+**Description**: Generate deck image  
 **Usage**: `!cr deck`  
 **Example**: `!cr deck`  
-**Notes**: Shows card levels, elixir costs, and average deck elixir
+**Notes**: Generates a visual deck image with card levels, elixir costs, and average deck elixir
 
 #### `!cr deck <player_tag>`
-**Description**: View any player's current deck composition  
+**Description**: Generate deck image for any player  
 **Usage**: `!cr deck V0VCP2909`  
 **Example**: `!cr deck V0VCP2909`  
 **Notes**: Useful for analyzing opponents or teammates
 
 #### `!cr deck @username`
-**Description**: View deck composition for a logged-in Discord user  
+**Description**: Generate deck image for a logged-in Discord user  
 **Usage**: `!cr deck @tyty0310`  
 **Example**: `!cr deck @tyty0310`  
 **Notes**: The mentioned Discord user must be logged in with their Clash Royale account
@@ -145,10 +145,11 @@ When you view stats, the bot provides interactive buttons:
 - **Clan Information**: Current clan name and tag (if applicable)
 
 ### 🃏 **Deck Information**
+- **Visual Deck Image**: Beautiful deck layout with all 8 cards
 - **Card List**: All 8 cards in current deck
-- **Card Levels**: Individual card levels
+- **Card Levels**: Individual card levels displayed prominently
 - **Elixir Costs**: Cost for each card
-- **Rarity**: Card rarity information
+- **Rarity**: Card rarity information with color coding
 - **Average Elixir**: Calculated average elixir cost
 - **Evolution Status**: Shows if cards are evolved
 

@@ -10,10 +10,16 @@
     "setup": "node setup.js"
   },
   "dependencies": {
+    "canvas": "^3.1.2",
     "discord.js": "^14.14.1",
     "node-fetch": "^3.3.2"
   },
-  "keywords": ["discord", "bot", "clash-royale", "stats"],
+  "keywords": [
+    "discord",
+    "bot",
+    "clash-royale",
+    "stats"
+  ],
   "author": "Your Name",
   "license": "MIT"
 }

@@ -304,7 +304,7 @@ export class EmbedBuilder {
       .setDescription('Here are all the available commands:')
       .addFields(
         { name: '🔐 **Login/Logout**', value: '`!cr login <player_tag>` - Login with your player tag\n`!cr logout` - Logout from your account', inline: false },
-        { name: '📊 **Stats**', value: '`!cr stats` - View your stats\n`!cr stats <player_tag>` - View any player\'s stats\n`!cr stats @username` - View logged-in Discord user\'s stats\n`!cr deck` - View your deck\n`!cr deck <player_tag>` - View any player\'s deck\n`!cr deck @username` - View logged-in Discord user\'s deck', inline: false },
+        { name: '📊 **Stats**', value: '`!cr stats` - View your stats\n`!cr stats <player_tag>` - View any player\'s stats\n`!cr stats @username` - View logged-in Discord user\'s stats\n`!cr deck` - Generate deck image\n`!cr deck <player_tag>` - Generate deck image for any player\n`!cr deck @username` - Generate deck image for Discord user', inline: false },
         { name: '⚔️ **Comparison**', value: '`!cr compare @username` - Compare your stats with another Discord user\n`!cr compare @user1 @user2` - Compare two Discord users', inline: false },
         { name: '👥 **Server**', value: '`!cr players` - List all logged in players in this server', inline: false },
         { name: '💾 **Admin**', value: '`!cr save` - Save user data to file\n`!cr reload` - Reload user data from file', inline: false },
