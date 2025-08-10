@@ -7,9 +7,9 @@ export class DeckImageGenerator {
     this.outputDir = './deck_images';
     this.ensureOutputDir();
     
-    // Set up canvas dimensions
+    // Set up canvas dimensions - increased height for better card layout
     this.width = 800;
-    this.height = 600;
+    this.height = 700; // Increased from 600 to accommodate larger cards
   }
 
   ensureOutputDir() {
@@ -108,8 +108,8 @@ export class DeckImageGenerator {
   }
 
   async drawDeckGrid(ctx, deck) {
-    const cardWidth = 120;
-    const cardHeight = 160;
+    const cardWidth = 140; // Increased width for better proportions
+    const cardHeight = 180; // Increased height to make cards more square
     const cardsPerRow = 4;
     const startY = 200; // Adjusted to work with new player info layout
     const startX = (this.width - (cardWidth * cardsPerRow)) / 2;
@@ -166,9 +166,9 @@ export class DeckImageGenerator {
         
         const cardImage = await loadImage(imageUrl);
         
-        // Calculate image dimensions to fit in card with padding
-        const imageSize = width - 20;
-        const imageX = x + 10;
+        // Calculate image dimensions to fit in card with padding - maintain aspect ratio
+        const imageSize = Math.min(width - 20, height - 60); // Use smaller dimension to maintain square aspect
+        const imageX = x + (width - imageSize) / 2; // Center the image horizontally
         const imageY = y + 10;
         
         // Draw card image
@@ -203,12 +203,12 @@ export class DeckImageGenerator {
     ctx.textBaseline = 'top';
     
     // Don't truncate names - show full names like HTML version
-    ctx.fillText(card.name, x + width/2, y + width + 15);
+    ctx.fillText(card.name, x + width/2, y + height - 50);
     
     // Card level (like HTML version)
     ctx.fillStyle = '#b8c5d6';
     ctx.font = '12px Arial';
-    ctx.fillText(`Lvl ${card.level}`, x + width/2, y + width + 35);
+    ctx.fillText(`Lvl ${card.level}`, x + width/2, y + height - 35);
     
     // Elixir cost circle (like HTML version)
     ctx.fillStyle = '#3182ce';
