@@ -56,11 +56,17 @@ export class ClashAPI {
         arena: playerData.arena,
         clan: playerData.clan,
         currentDeck: playerData.currentDeck,
+        cards: playerData.cards, // Add all cards for collection count
         starPoints: playerData.starPoints,
         expPoints: playerData.expPoints,
         totalExpPoints: playerData.totalExpPoints,
         badges: playerData.badges,
-        achievements: playerData.achievements
+        achievements: playerData.achievements,
+        // Add additional data for enhanced stats
+        challengeCardsWon: playerData.challengeCardsWon || 0,
+        challengeMaxWins: playerData.challengeMaxWins || 0,
+        tournamentCardsWon: playerData.tournamentCardsWon || 0,
+        tournamentBattleCount: playerData.tournamentBattleCount || 0
       };
 
       return stats;

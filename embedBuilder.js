@@ -6,7 +6,7 @@ export class EmbedBuilder {
     this.colors = config.COLORS;
   }
 
-  // Create main player stats embed
+  // Create main player stats embed with enhanced battle stats
   createPlayerStatsEmbed(playerStats, discordUser = null) {
     const embed = new DiscordEmbedBuilder()
       .setColor(this.colors.PRIMARY)
@@ -25,31 +25,47 @@ export class EmbedBuilder {
           inline: true 
         },
         { 
-          name: '⚔️ **Battle Stats**', 
-          value: `Wins: **${playerStats.wins.toLocaleString()}**\nLosses: **${playerStats.losses.toLocaleString()}**\nWin Rate: **${playerStats.winRate}%**`, 
-          inline: true 
-        },
-        { 
-          name: '👑 **Three Crown Wins**', 
-          value: `**${playerStats.threeCrownWins.toLocaleString()}**`, 
-          inline: true 
-        },
-        { 
-          name: '🎁 **Donations**', 
-          value: `Given: **${playerStats.donations.toLocaleString()}**\nReceived: **${playerStats.donationsReceived.toLocaleString()}**`, 
-          inline: true 
-        },
-        { 
           name: '⭐ **Star Points**', 
           value: `**${playerStats.starPoints.toLocaleString()}**`, 
           inline: true 
         }
-      )
-      .setFooter({ 
-        text: discordUser ? `Requested by ${discordUser.username}` : 'Clash Royale Stats',
-        iconURL: discordUser ? discordUser.displayAvatarURL() : null
-      })
-      .setTimestamp();
+      );
+
+    // Add enhanced battle stats section
+    const totalGames = playerStats.battleCount || 0;
+    const winRate = totalGames > 0 ? ((playerStats.wins / totalGames) * 100).toFixed(3) : 0;
+    
+    embed.addFields({
+      name: '⚔️ **Battle Stats**',
+      value: `**Wins:** ${playerStats.wins.toLocaleString()} (${winRate}%)\n**Losses:** ${playerStats.losses.toLocaleString()} (${(100 - parseFloat(winRate)).toFixed(3)}%)\n**Total Games:** ${totalGames.toLocaleString()}\n**Three Crown Wins:** ${playerStats.threeCrownWins.toLocaleString()}`,
+      inline: false
+    });
+
+    // Add clan wars section
+    embed.addFields({
+      name: '🏰 **Clan Wars**',
+      value: `**Clan Cards Collected:** ${playerStats.clanCardsCollected || 0}\n**War Day Wins:** ${playerStats.warDayWins || 0}`,
+      inline: false
+    });
+
+    // Add time spent playing (estimated)
+    const estimatedHours = Math.floor(totalGames * 3 / 60); // Assuming 3 minutes per game
+    const estimatedMinutes = totalGames * 3 % 60;
+    const timeSpent = `${estimatedHours}h ${estimatedMinutes}m`;
+    
+    embed.addFields({
+      name: '⏱️ **Time Spent Playing**',
+      value: `**Ladder + Challenges:** ${timeSpent}\n**Tournaments:** 0s\n**Total:** ${timeSpent}`,
+      inline: false
+    });
+
+    // Add misc stats
+    const cardsFound = this.countUniqueCards(playerStats);
+    embed.addFields({
+      name: '📈 **Misc Stats**',
+      value: `**Experience:** Level ${playerStats.expLevel}\n**Cards Found:** ${cardsFound} / 120\n**Total Donations:** ${playerStats.totalDonations.toLocaleString()}\n**Star Points:** ${playerStats.starPoints.toLocaleString()}\n**Account Age:** ${this.calculateAccountAge(playerStats)}\n**Games per Day:** ${this.calculateGamesPerDay(playerStats)}`,
+      inline: false
+    });
 
     // Add clan info if available
     if (playerStats.clan) {
@@ -60,26 +76,67 @@ export class EmbedBuilder {
       });
     }
 
+    embed.setFooter({ 
+      text: discordUser ? `Requested by ${discordUser.username}` : 'Clash Royale Stats',
+      iconURL: discordUser ? discordUser.displayAvatarURL() : null
+    })
+    .setTimestamp();
+
     return embed;
   }
 
-  // Create detailed deck embed
+  // Create enhanced deck embed that looks more like the image
   createDeckEmbed(playerStats, discordUser = null) {
     const embed = new DiscordEmbedBuilder()
       .setColor(this.colors.INFO)
       .setTitle(`🃏 ${playerStats.name}'s Current Deck`)
-      .setDescription(`Average Elixir Cost: **${this.calculateAverageElixir(playerStats.currentDeck)}**`)
+      .setDescription(`**${playerStats.clan?.name || 'No Clan'}** • Average Elixir: **${this.calculateAverageElixir(playerStats.currentDeck)}**`)
       .setThumbnail('https://api-assets.clashroyale.com/cards/300/CoZdp5PpsTH858l212lAMeJxVJ0zxv9V-f5xC8Bvj5g.png');
 
-    // Add each card to the embed
-    playerStats.currentDeck.forEach((card, index) => {
-      const evolutionText = card.evolutionLevel ? ` (Evolved)` : '';
-      embed.addFields({
-        name: `${index + 1}. ${card.name}${evolutionText}`,
-        value: `Level: **${card.level}** | Cost: **${card.elixirCost}** | Rarity: **${card.rarity}**`,
-        inline: true
+    // Create a grid-like display for the deck (2 rows of 4 cards)
+    const deck = playerStats.currentDeck || [];
+    if (deck.length > 0) {
+      // First row (cards 1-4)
+      let firstRow = '';
+      for (let i = 0; i < Math.min(4, deck.length); i++) {
+        const card = deck[i];
+        const evolutionText = card.evolutionLevel ? ' (Evolved)' : '';
+        firstRow += `**${i + 1}.** ${card.name}${evolutionText}\n`;
+      }
+      
+      // Second row (cards 5-8)
+      let secondRow = '';
+      for (let i = 4; i < Math.min(8, deck.length); i++) {
+        const card = deck[i];
+        const evolutionText = card.evolutionLevel ? ' (Evolved)' : '';
+        secondRow += `**${i + 1}.** ${card.name}${evolutionText}\n`;
+      }
+
+      embed.addFields(
+        { name: '🃏 **Deck Cards**', value: firstRow, inline: true },
+        { name: '\u200b', value: secondRow, inline: true }
+      );
+
+      // Add card details in a more organized way with levels prominently displayed
+      let cardDetails = '';
+      deck.forEach((card, index) => {
+        const evolutionText = card.evolutionLevel ? ' (Evolved)' : '';
+        const rarityEmoji = this.getRarityEmoji(card.rarity);
+        cardDetails += `${rarityEmoji} **${card.name}**${evolutionText}\n**Level ${card.level}** • ${card.elixirCost} elixir\n\n`;
       });
-    });
+
+      embed.addFields({
+        name: '📋 **Card Details**',
+        value: cardDetails,
+        inline: false
+      });
+    } else {
+      embed.addFields({
+        name: '❌ **No Deck Found**',
+        value: 'This player does not have a current deck set.',
+        inline: false
+      });
+    }
 
     embed.setFooter({ 
       text: discordUser ? `Requested by ${discordUser.username}` : 'Current Deck',
@@ -90,46 +147,72 @@ export class EmbedBuilder {
     return embed;
   }
 
-  // Create comparison embed
+  // Create enhanced comparison embed with more detailed stats
   createComparisonEmbed(player1Stats, player2Stats, discordUser = null, player1DiscordUser = null, player2DiscordUser = null) {
     const embed = new DiscordEmbedBuilder()
       .setColor(this.colors.WARNING)
       .setTitle('⚔️ Player Comparison')
-      .setDescription(`Comparing **${player1Stats.name}** vs **${player2Stats.name}**`)
-      .addFields(
-        {
-          name: '🏆 **Trophies**',
-          value: `${player1Stats.name}: **${player1Stats.trophies.toLocaleString()}**\n${player2Stats.name}: **${player2Stats.trophies.toLocaleString()}**`,
-          inline: true
-        },
-        {
-          name: '📊 **Win Rate**',
-          value: `${player1Stats.name}: **${player1Stats.winRate}%**\n${player2Stats.name}: **${player2Stats.winRate}%**`,
-          inline: true
-        },
-        {
-          name: '👑 **Three Crown Wins**',
-          value: `${player1Stats.name}: **${player1Stats.threeCrownWins.toLocaleString()}**\n${player2Stats.name}: **${player2Stats.threeCrownWins.toLocaleString()}**`,
-          inline: true
-        },
-        {
-          name: '🎁 **Total Donations**',
-          value: `${player1Stats.name}: **${player1Stats.totalDonations.toLocaleString()}**\n${player2Stats.name}: **${player2Stats.totalDonations.toLocaleString()}**`,
-          inline: true
-        },
-        {
-          name: '⭐ **Star Points**',
-          value: `${player1Stats.name}: **${player1Stats.starPoints.toLocaleString()}**\n${player2Stats.name}: **${player2Stats.starPoints.toLocaleString()}**`,
-          inline: true
-        },
-        {
-          name: '📈 **Level**',
-          value: `${player1Stats.name}: **${player1Stats.expLevel}**\n${player2Stats.name}: **${player2Stats.expLevel}**`,
-          inline: true
-        }
-      );
+      .setDescription(`Comparing **${player1Stats.name}** vs **${player2Stats.name}**`);
 
-    // Add Discord user information if available
+    // Basic stats comparison
+    embed.addFields(
+      {
+        name: '🏆 **Trophies**',
+        value: `${player1Stats.name}: **${player1Stats.trophies.toLocaleString()}**\n${player2Stats.name}: **${player2Stats.trophies.toLocaleString()}**`,
+        inline: true
+      },
+      {
+        name: '📊 **Level**',
+        value: `${player1Stats.name}: **${player1Stats.expLevel}**\n${player2Stats.name}: **${player2Stats.expLevel}**`,
+        inline: true
+      },
+      {
+        name: '⭐ **Star Points**',
+        value: `${player1Stats.name}: **${player1Stats.starPoints.toLocaleString()}**\n${player2Stats.name}: **${player2Stats.starPoints.toLocaleString()}**`,
+        inline: true
+      }
+    );
+
+    // Battle stats comparison
+    const p1WinRate = player1Stats.battleCount > 0 ? ((player1Stats.wins / player1Stats.battleCount) * 100).toFixed(1) : 0;
+    const p2WinRate = player2Stats.battleCount > 0 ? ((player2Stats.wins / player2Stats.battleCount) * 100).toFixed(1) : 0;
+    
+    embed.addFields(
+      {
+        name: '⚔️ **Battle Stats**',
+        value: `${player1Stats.name}: **${player1Stats.wins.toLocaleString()}** wins (${p1WinRate}%)\n${player2Stats.name}: **${player2Stats.wins.toLocaleString()}** wins (${p2WinRate}%)`,
+        inline: true
+      },
+      {
+        name: '👑 **Three Crown Wins**',
+        value: `${player1Stats.name}: **${player1Stats.threeCrownWins.toLocaleString()}**\n${player2Stats.name}: **${player2Stats.threeCrownWins.toLocaleString()}**`,
+        inline: true
+      },
+      {
+        name: '🎁 **Total Donations**',
+        value: `${player1Stats.name}: **${player1Stats.totalDonations.toLocaleString()}**\n${player2Stats.name}: **${player2Stats.totalDonations.toLocaleString()}**`,
+        inline: true
+      }
+    );
+
+    // Clan wars comparison
+    embed.addFields({
+      name: '🏰 **Clan Wars**',
+      value: `${player1Stats.name}: **${player1Stats.clanCardsCollected || 0}** cards, **${player1Stats.warDayWins || 0}** wins\n${player2Stats.name}: **${player2Stats.clanCardsCollected || 0}** cards, **${player2Stats.warDayWins || 0}** wins`,
+      inline: false
+    });
+
+    // Cards found comparison
+    const p1Cards = this.countUniqueCards(player1Stats);
+    const p2Cards = this.countUniqueCards(player2Stats);
+    
+    embed.addFields({
+      name: '🃏 **Collection Progress**',
+      value: `${player1Stats.name}: **${p1Cards}/120** cards\n${player2Stats.name}: **${p2Cards}/120** cards`,
+      inline: false
+    });
+
+    // Discord user information if available
     if (player1DiscordUser && player2DiscordUser) {
       embed.addFields({
         name: '👥 **Discord Users**',
@@ -275,6 +358,58 @@ export class EmbedBuilder {
     return (totalElixir / deck.length).toFixed(1);
   }
 
+  // Helper method to count unique cards found
+  countUniqueCards(playerStats) {
+    if (!playerStats.cards || !Array.isArray(playerStats.cards)) {
+      return 0;
+    }
+    return playerStats.cards.length;
+  }
+
+  // Helper method to calculate account age (estimated)
+  calculateAccountAge(playerStats) {
+    // Estimate account age based on experience level
+    // This is a rough estimation - in reality, you'd need account creation date
+    const estimatedDays = Math.floor(playerStats.totalExpPoints / 100); // Rough estimate
+    const years = Math.floor(estimatedDays / 365);
+    const weeks = Math.floor((estimatedDays % 365) / 7);
+    const days = estimatedDays % 7;
+    
+    if (years > 0) {
+      return `${years}y ${weeks}w ${days}d`;
+    } else if (weeks > 0) {
+      return `${weeks}w ${days}d`;
+    } else {
+      return `${days}d`;
+    }
+  }
+
+  // Helper method to calculate games per day (estimated)
+  calculateGamesPerDay(playerStats) {
+    // Estimate games per day based on total games and estimated account age
+    const estimatedDays = Math.floor(playerStats.totalExpPoints / 100);
+    if (estimatedDays > 0) {
+      return (playerStats.battleCount / estimatedDays).toFixed(2);
+    }
+    return 'N/A';
+  }
+
+  // Helper method to get rarity emoji
+  getRarityEmoji(rarity) {
+    switch (rarity) {
+      case 'Common':
+        return '🟢';
+      case 'Rare':
+        return '🟡';
+      case 'Epic':
+        return '🔵';
+      case 'Legendary':
+        return '🟣';
+      default:
+        return '⚪';
+    }
+  }
+
   // Create action row with buttons for interactive features
   createActionRow() {
     return new ActionRowBuilder()
@@ -293,7 +428,7 @@ export class EmbedBuilder {
           .setCustomId('refresh_stats')
           .setLabel('Refresh')
           .setStyle(ButtonStyle.Success)
-          .setEmoji('🔄')
+          .setEmoji('��')
       );
   }
 }
