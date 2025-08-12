@@ -229,10 +229,10 @@ export class DeckImageGenerator {
     
     // Evolution indicator - add a special badge for evolution cards
     if (isEvolution) {
-      // Draw evolution badge in top-right corner (larger and more prominent)
+      // Draw evolution badge in top-right corner (moved down to avoid being cut off)
       ctx.fillStyle = '#ffd700'; // Gold color for evolution
       ctx.beginPath();
-      ctx.arc(x + width - 20, y + 20, 18, 0, 2 * Math.PI);
+      ctx.arc(x + width - 20, y + 30, 18, 0, 2 * Math.PI);
       ctx.fill();
       
       // Add gold border to the badge
@@ -245,7 +245,7 @@ export class DeckImageGenerator {
       ctx.font = 'bold 12px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('EVO', x + width - 20, y + 20);
+      ctx.fillText('EVO', x + width - 20, y + 30);
       
       // Add a subtle glow effect around the card
       ctx.strokeStyle = '#ffd700';

@@ -198,7 +198,7 @@ export class EmbedBuilder {
     if (!deck || deck.length === 0) return null;
     
     // Clash Royale deck links use card IDs in a specific format
-    // The format is: https://link.clashroyale.com/deck/en?deck=cardId1;cardId2;cardId3;...
+    // Based on the example: https://link.clashroyale.com/en/?clashroyale://copyDeck?deck=27000008;26000000;26000001;26000010;26000084;27000006;28000000;28000011&l=Royals&slots=0;0;0;0;0;0;0;0&tt=159000000
     const cardIds = deck.map(card => {
       // Use the card ID from the API response
       return card.id || null;
@@ -209,8 +209,19 @@ export class EmbedBuilder {
       return null;
     }
     
-    // Create the deck link format
-    const deckLink = `https://link.clashroyale.com/deck/en?deck=${cardIds.join(';')}`;
+    // Create the deck link format using the correct Clash Royale format
+    // Format: https://link.clashroyale.com/en/?clashroyale://copyDeck?deck=cardId1;cardId2;cardId3;...&l=DeckName&slots=0;0;0;0;0;0;0;0&tt=timestamp
+    const deckName = encodeURIComponent('Deck');
+    
+    // Generate slots array based on evolution levels
+    // 0 = no evolution, 1 = evolved
+    const slots = deck.map(card => {
+      return card.evolutionLevel && card.evolutionLevel > 0 ? '1' : '0';
+    }).join(';');
+    
+    const timestamp = Date.now();
+    
+    const deckLink = `https://link.clashroyale.com/en/?clashroyale://copyDeck?deck=${cardIds.join(';')}&l=${deckName}&slots=${slots}&tt=${timestamp}`;
     
     return deckLink;
   }
