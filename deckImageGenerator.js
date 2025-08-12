@@ -110,6 +110,18 @@ export class DeckImageGenerator {
     ctx.fillRect(startX + (elixirWidth + spacing) * 2, avgElixirY, elixirWidth, 40);
     ctx.fillStyle = 'white';
     ctx.fillText(`Total: ${totalElixir}`, startX + (elixirWidth + spacing) * 2 + elixirWidth/2, avgElixirY + 20);
+    
+    // Evolution count display
+    const evolutionCount = deck.filter(card => card.evolutionLevel && card.evolutionLevel > 0).length;
+    if (evolutionCount > 0) {
+      ctx.fillStyle = '#ffd700'; // Gold color for evolution
+      ctx.fillRect(startX, avgElixirY + 50, elixirWidth, 30);
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`🔄 ${evolutionCount} Evolution${evolutionCount > 1 ? 's' : ''}`, startX + elixirWidth/2, avgElixirY + 65);
+    }
   }
 
   async drawDeckGrid(ctx, deck) {
@@ -136,8 +148,10 @@ export class DeckImageGenerator {
   }
 
   async drawCard(ctx, card, x, y, width, height) {
-    // Debug: Log individual card data
-    console.log(`Drawing card:`, card);
+    // Debug: Log evolution card detection
+    if (card.evolutionLevel && card.evolutionLevel > 0) {
+      console.log(`Evolution card detected: ${card.name} (Level ${card.evolutionLevel})`);
+    }
     
     // Card background with better styling - match HTML version
     const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
@@ -176,7 +190,9 @@ export class DeckImageGenerator {
       }
       
       if (imageUrl) {
-        console.log(`Attempting to load card image from: ${imageUrl}`);
+        if (isEvolution) {
+          console.log(`Loading evolution card image: ${imageUrl}`);
+        }
         
         const cardImage = await loadImage(imageUrl);
         
@@ -212,18 +228,28 @@ export class DeckImageGenerator {
     
     // Evolution indicator - add a special badge for evolution cards
     if (isEvolution) {
-      // Draw evolution badge in top-right corner
+      // Draw evolution badge in top-right corner (larger and more prominent)
       ctx.fillStyle = '#ffd700'; // Gold color for evolution
       ctx.beginPath();
-      ctx.arc(x + width - 15, y + 15, 12, 0, 2 * Math.PI);
+      ctx.arc(x + width - 20, y + 20, 18, 0, 2 * Math.PI);
       ctx.fill();
+      
+      // Add gold border to the badge
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.stroke();
       
       // Add evolution text
       ctx.fillStyle = '#000';
-      ctx.font = 'bold 10px Arial';
+      ctx.font = 'bold 12px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('EVO', x + width - 15, y + 15);
+      ctx.fillText('EVO', x + width - 20, y + 20);
+      
+      // Add a subtle glow effect around the card
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(x + 2, y + 2, width - 4, height - 4);
     }
     
     // Card name - positioned below the image area (like HTML version)

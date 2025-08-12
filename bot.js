@@ -256,14 +256,12 @@ async function handleDeck(message, args) {
     // Generate deck image
     const deckImage = await deckImageGenerator.generateDeckImage(playerStats);
     
-    // Create deck embed with copy button
-    const deckEmbed = embedBuilder.createDeckEmbedWithCopyButton(playerStats, message.author);
+    // Create action row with buttons
     const actionRow = embedBuilder.createActionRow();
     
-    // Send the PNG image as an attachment with embed and buttons
+    // Send the PNG image as an attachment with just buttons
     await message.reply({
       content: `🃏 **${playerStats.name}'s Current Deck**`,
-      embeds: [deckEmbed],
       components: [actionRow],
       files: [{
         attachment: deckImage.filepath,
@@ -619,14 +617,12 @@ async function handleDeckButton(interaction) {
     // Generate deck image
     const deckImage = await deckImageGenerator.generateDeckImage(playerStats);
     
-    // Create deck embed with copy button
-    const deckEmbed = embedBuilder.createDeckEmbedWithCopyButton(playerStats, interaction.user);
+    // Create action row with buttons
     const actionRow = embedBuilder.createActionRow();
     
-    // Send the PNG image as an attachment with embed and buttons
+    // Send the PNG image as an attachment with just buttons
     await interaction.reply({
       content: `🃏 **${playerStats.name}'s Current Deck**`,
-      embeds: [deckEmbed],
       components: [actionRow],
       files: [{
         attachment: deckImage.filepath,
