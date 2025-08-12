@@ -26,8 +26,7 @@ const rateLimits = new Map(); // userId -> { count: number, resetTime: number }
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 3; // Max 3 requests per minute per user
 
-// Temporary storage for deck information
-const deckStorage = new Map(); // interactionId -> { playerStats, timestamp }
+
 
 // Command collection
 client.commands = new Collection();
@@ -43,8 +42,7 @@ client.once(Events.ClientReady, async () => {
   const loggedInUsers = userManager.getAllLoggedInUsers();
   console.log(`📂 Restored ${loggedInUsers.length} logged-in user(s) from file`);
   
-  // Set up periodic cleanup of deck storage
-  setInterval(cleanupDeckStorage, 60000); // Clean up every minute
+
 });
 
 // Message event handler
@@ -265,11 +263,7 @@ async function handleDeck(message, args) {
     // Create action row with buttons
     const actionRow = embedBuilder.createActionRow();
     
-    // Store deck information for copy button (use message ID as key)
-    deckStorage.set(message.id, {
-      playerStats: playerStats,
-      timestamp: Date.now()
-    });
+
     
     // Send the PNG image as an attachment with just buttons
     await message.reply({
@@ -580,9 +574,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         case 'view_deck':
           await handleDeckButton(interaction);
           break;
-        case 'copy_deck':
-          await handleCopyDeckButton(interaction);
-          break;
+
         case 'compare_stats':
           await handleCompareButton(interaction);
           break;
@@ -632,11 +624,7 @@ async function handleDeckButton(interaction) {
     // Create action row with buttons
     const actionRow = embedBuilder.createActionRow();
     
-    // Store deck information for copy button
-    deckStorage.set(interaction.id, {
-      playerStats: playerStats,
-      timestamp: Date.now()
-    });
+
     
     // Send the PNG image as an attachment with just buttons
     await interaction.reply({
@@ -722,94 +710,9 @@ async function handleRefreshButton(interaction) {
   }
 }
 
-async function handleCopyDeckButton(interaction) {
-  try {
-    // Check rate limit
-    checkRateLimit(interaction.user.id);
-    
-    // Try to get deck information from storage
-    let storedDeck = null;
-    
-    // Check if this is a reply to a deck message
-    if (interaction.message && interaction.message.reference) {
-      const referencedMessageId = interaction.message.reference.messageId;
-      storedDeck = deckStorage.get(referencedMessageId);
-    }
-    
-    // If no stored deck found, try to get from current message
-    if (!storedDeck && interaction.message) {
-      storedDeck = deckStorage.get(interaction.message.id);
-    }
-    
-    // If still no stored deck, fall back to user's own deck
-    if (!storedDeck) {
-      if (!userManager.isUserLoggedIn(interaction.user.id)) {
-        const errorEmbed = embedBuilder.createErrorEmbed(
-          new Error('You are not logged in. Please login first with `!cr login <player_tag>`'),
-          interaction.user
-        );
-        await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-        return;
-      }
-      
-      const playerTag = userManager.getUserPlayerTag(interaction.user.id);
-      const playerStats = await clashAPI.getPlayerStats(playerTag);
-      storedDeck = { playerStats: playerStats };
-    }
-    
-    // Check if stored deck is too old (older than 5 minutes)
-    if (storedDeck.timestamp && Date.now() - storedDeck.timestamp > 300000) {
-      deckStorage.delete(interaction.message?.id || interaction.message?.reference?.messageId);
-      const errorEmbed = embedBuilder.createErrorEmbed(
-        new Error('Deck information has expired. Please view the deck again.'),
-        interaction.user
-      );
-      await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-      return;
-    }
-    
-    const playerStats = storedDeck.playerStats;
-    
-    // Generate deck link
-    const deckLink = embedBuilder.generateDeckLink(playerStats.currentDeck);
-    
-    if (!deckLink) {
-      const errorEmbed = embedBuilder.createErrorEmbed(
-        new Error('No deck found to copy.'),
-        interaction.user
-      );
-      await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-      return;
-    }
-    
-    // Try to generate a Clash Royale deck link
-    const clashRoyaleLink = embedBuilder.generateClashRoyaleDeckLink(playerStats.currentDeck);
-    
-    // Create simple message with deck info (no embed)
-    let message = `📋 **${playerStats.name}'s Deck Copied!**\n\n\`\`\`${deckLink}\`\`\``;
-    
-    if (clashRoyaleLink) {
-      message += `\n\n🔗 **Clash Royale Deck Link:**\n${clashRoyaleLink}`;
-    }
-    
-    await interaction.reply({ content: message, ephemeral: true });
-  } catch (error) {
-    const errorEmbed = embedBuilder.createErrorEmbed(error, interaction.user);
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-  }
-}
 
-// Clean up old deck storage entries
-function cleanupDeckStorage() {
-  const now = Date.now();
-  const fiveMinutes = 300000; // 5 minutes in milliseconds
-  
-  for (const [key, value] of deckStorage.entries()) {
-    if (value.timestamp && now - value.timestamp > fiveMinutes) {
-      deckStorage.delete(key);
-    }
-  }
-}
+
+
 
 // Rate limiting function
 function checkRateLimit(userId) {

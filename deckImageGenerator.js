@@ -111,17 +111,7 @@ export class DeckImageGenerator {
     ctx.fillStyle = 'white';
     ctx.fillText(`Total: ${totalElixir}`, startX + (elixirWidth + spacing) * 2 + elixirWidth/2, avgElixirY + 20);
     
-    // Evolution count display
-    const evolutionCount = deck.filter(card => card.evolutionLevel && card.evolutionLevel > 0).length;
-    if (evolutionCount > 0) {
-      ctx.fillStyle = '#ffd700'; // Gold color for evolution
-      ctx.fillRect(startX, avgElixirY + 50, elixirWidth, 30);
-      ctx.fillStyle = '#000';
-      ctx.font = 'bold 14px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`🔄 ${evolutionCount} Evolution${evolutionCount > 1 ? 's' : ''}`, startX + elixirWidth/2, avgElixirY + 65);
-    }
+    // Evolution count display removed - keeping it clean
   }
 
   async drawDeckGrid(ctx, deck) {

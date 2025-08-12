@@ -147,84 +147,7 @@ export class EmbedBuilder {
     return embed;
   }
 
-  // Create deck embed with copy button
-  createDeckEmbedWithCopyButton(playerStats, discordUser = null) {
-    const embed = this.createDeckEmbed(playerStats, discordUser);
-    
-    // Add evolution count info if there are evolution cards
-    const deck = playerStats.currentDeck || [];
-    const evolutionCount = deck.filter(card => card.evolutionLevel && card.evolutionLevel > 0).length;
-    
-    if (evolutionCount > 0) {
-      embed.addFields({
-        name: '🔄 **Evolution Cards**',
-        value: `This deck contains **${evolutionCount} evolution card${evolutionCount > 1 ? 's' : ''}**`,
-        inline: false
-      });
-    }
-    
-    return embed;
-  }
 
-  // Generate deck link for copying
-  generateDeckLink(deck) {
-    if (!deck || deck.length === 0) return null;
-    
-    // Create a formatted deck string that can be copied
-    let deckString = '🃏 **Deck Composition:**\n';
-    
-    deck.forEach((card, index) => {
-      const evolutionText = card.evolutionLevel && card.evolutionLevel > 0 ? ' (Evolved)' : '';
-      const rarityEmoji = this.getRarityEmoji(card.rarity);
-      deckString += `${index + 1}. ${rarityEmoji} **${card.name}**${evolutionText}\n`;
-      deckString += `   Level: ${card.level} | Elixir: ${card.elixirCost}\n\n`;
-    });
-    
-    // Add summary
-    const totalElixir = deck.reduce((sum, card) => sum + card.elixirCost, 0);
-    const avgElixir = (totalElixir / deck.length).toFixed(1);
-    const evolutionCount = deck.filter(card => card.evolutionLevel && card.evolutionLevel > 0).length;
-    
-    deckString += `📊 **Deck Summary:**\n`;
-    deckString += `• Average Elixir: ${avgElixir}\n`;
-    deckString += `• Total Elixir: ${totalElixir}\n`;
-    deckString += `• Evolution Cards: ${evolutionCount}\n`;
-    
-    return deckString;
-  }
-
-  // Generate Clash Royale deck link (for importing into game)
-  generateClashRoyaleDeckLink(deck) {
-    if (!deck || deck.length === 0) return null;
-    
-    // Clash Royale deck links use card IDs in a specific format
-    // Based on the example: https://link.clashroyale.com/en/?clashroyale://copyDeck?deck=27000008;26000000;26000001;26000010;26000084;27000006;28000000;28000011&l=Royals&slots=0;0;0;0;0;0;0;0&tt=159000000
-    const cardIds = deck.map(card => {
-      // Use the card ID from the API response
-      return card.id || null;
-    }).filter(id => id !== null);
-    
-    if (cardIds.length !== 8) {
-      console.log('Not all cards have IDs, cannot generate deck link');
-      return null;
-    }
-    
-    // Create the deck link format using the correct Clash Royale format
-    // Format: https://link.clashroyale.com/en/?clashroyale://copyDeck?deck=cardId1;cardId2;cardId3;...&l=DeckName&slots=0;0;0;0;0;0;0;0&tt=timestamp
-    const deckName = encodeURIComponent('Deck');
-    
-    // Generate slots array based on evolution levels
-    // 0 = no evolution, 1 = evolved
-    const slots = deck.map(card => {
-      return card.evolutionLevel && card.evolutionLevel > 0 ? '1' : '0';
-    }).join(';');
-    
-    const timestamp = Date.now();
-    
-    const deckLink = `https://link.clashroyale.com/en/?clashroyale://copyDeck?deck=${cardIds.join(';')}&l=${deckName}&slots=${slots}&tt=${timestamp}`;
-    
-    return deckLink;
-  }
 
   // Create enhanced comparison embed with more detailed stats
   createComparisonEmbed(player1Stats, player2Stats, discordUser = null, player1DiscordUser = null, player2DiscordUser = null) {
@@ -749,11 +672,7 @@ export class EmbedBuilder {
           .setLabel('View Deck')
           .setStyle(ButtonStyle.Primary)
           .setEmoji('🃏'),
-        new ButtonBuilder()
-          .setCustomId('copy_deck')
-          .setLabel('Copy Deck')
-          .setStyle(ButtonStyle.Secondary)
-          .setEmoji('📋'),
+
         new ButtonBuilder()
           .setCustomId('compare_stats')
           .setLabel('Compare')
