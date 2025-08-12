@@ -472,8 +472,16 @@ export class EmbedBuilder {
       });
     } else {
       battles.forEach((battle, index) => {
-        const battleTime = new Date(battle.battleTime);
-        const formattedTime = `<t:${Math.floor(battleTime.getTime() / 1000)}:R>`;
+        // Fix timestamp parsing
+        let formattedTime = 'Unknown time';
+        try {
+          const battleTime = new Date(battle.battleTime);
+          if (!isNaN(battleTime.getTime())) {
+            formattedTime = `<t:${Math.floor(battleTime.getTime() / 1000)}:R>`;
+          }
+        } catch (error) {
+          console.error('Error parsing battle time:', error);
+        }
 
         // Get player and opponent info
         const player = battle.team?.[0] || {};
@@ -504,59 +512,53 @@ export class EmbedBuilder {
           ? `🏅 ${startingTrophies} → ${endingTrophies} (${trophyEmoji} ${trophyChangeText})`
           : `🏅 ${trophyEmoji} ${trophyChangeText}`;
 
-        // HP info
+        // HP info - simplified
         const playerKTHP = player.kingTowerHitPoints ?? '—';
-        const playerPTHPArr = Array.isArray(player.princessTowersHitPoints) ? player.princessTowersHitPoints : [];
-        const playerPTHP = playerPTHPArr.length ? playerPTHPArr.join(', ') : '—';
         const opponentKTHP = opponent.kingTowerHitPoints ?? '—';
-        const opponentPTHPArr = Array.isArray(opponent.princessTowersHitPoints) ? opponent.princessTowersHitPoints : [];
-        const opponentPTHP = opponentPTHPArr.length ? opponentPTHPArr.join(', ') : '—';
 
-        // Cards summary
+        // Cards summary - simplified
         const playerDeckNames = Array.isArray(player.cards)
-          ? player.cards.map(c => c?.name).filter(Boolean).join(', ')
-          : '';
-        const supportCardsNames = Array.isArray(player.supportCards)
-          ? player.supportCards.map(c => c?.name).filter(Boolean).join(', ')
+          ? player.cards.map(c => c?.name).filter(Boolean).slice(0, 4).join(', ') + (player.cards.length > 4 ? '...' : '')
           : '';
 
         // Misc battle info
-        const battleType = battle.type || 'Unknown';
         const modeName = battle.gameMode?.name || 'Unknown Mode';
         const arenaName = battle.arena?.name || 'Unknown Arena';
-        const isLadderTournament = battle.isLadderTournament ? 'Yes' : 'No';
-        const deckSelection = battle.deckSelection || 'unknown';
-        const leagueNumber = typeof battle.leagueNumber === 'number' ? ` • League ${battle.leagueNumber}` : '';
-        const isHostedMatch = battle.isHostedMatch ? 'Yes' : 'No';
 
-        const playerClan = player.clan?.name ? ` • Clan: ${player.clan.name}` : '';
+        const playerClan = player.clan?.name ? ` • ${player.clan.name}` : '';
         const playerTag = player.tag ? ` (${player.tag})` : '';
         const opponentTag = opponent.tag ? ` (${opponent.tag})` : '';
 
-        const playerElixirLeaked = typeof player.elixirLeaked === 'number' ? player.elixirLeaked.toFixed(2) : null;
-        const opponentElixirLeaked = typeof opponent.elixirLeaked === 'number' ? opponent.elixirLeaked.toFixed(2) : null;
+        const playerElixirLeaked = typeof player.elixirLeaked === 'number' ? player.elixirLeaked.toFixed(1) : null;
+        const opponentElixirLeaked = typeof opponent.elixirLeaked === 'number' ? opponent.elixirLeaked.toFixed(1) : null;
 
-        const elixirLineParts = [];
-        if (playerElixirLeaked !== null) elixirLineParts.push(`You: ${playerElixirLeaked}`);
-        if (opponentElixirLeaked !== null) elixirLineParts.push(`Opp: ${opponentElixirLeaked}`);
-        const elixirLine = elixirLineParts.length ? `🧪 Elixir leaked — ${elixirLineParts.join(' | ')}` : '';
-
-        // Create battle summary
+        // Create simplified battle summary
         const summaryLines = [
           `${resultEmoji} **${result}** (${playerCrowns}-${opponentCrowns})`,
           trophiesLine,
-          `🎮 ${modeName} • ${battleType}${leagueNumber}`,
-          `🏟️ ${arenaName} • Ladder Tournament: ${isLadderTournament} • Deck: ${deckSelection}`,
-          `⏰ ${formattedTime} • Hosted Match: ${isHostedMatch}`,
+          `🎮 ${modeName} • 🏟️ ${arenaName}`,
+          `⏰ ${formattedTime}`,
           `👤 ${player.name || 'You'}${playerTag}${playerClan}`,
-          `   K: ${playerKTHP} • P: ${playerPTHP}`,
           `🆚 ${opponent.name || 'Opponent'}${opponentTag}`,
-          `   K: ${opponentKTHP} • P: ${opponentPTHP}`,
         ];
 
-        if (elixirLine) summaryLines.push(elixirLine);
-        if (playerDeckNames) summaryLines.push(`🃏 Deck — ${playerDeckNames}`);
-        if (supportCardsNames) summaryLines.push(`🛡️ Support — ${supportCardsNames}`);
+        // Add HP info if available
+        if (playerKTHP !== '—' || opponentKTHP !== '—') {
+          summaryLines.push(`💖 HP — You: ${playerKTHP} | Opp: ${opponentKTHP}`);
+        }
+
+        // Add elixir info if available
+        if (playerElixirLeaked !== null || opponentElixirLeaked !== null) {
+          const elixirParts = [];
+          if (playerElixirLeaked !== null) elixirParts.push(`You: ${playerElixirLeaked}`);
+          if (opponentElixirLeaked !== null) elixirParts.push(`Opp: ${opponentElixirLeaked}`);
+          summaryLines.push(`🧪 Elixir leaked — ${elixirParts.join(' | ')}`);
+        }
+
+        // Add deck info if available
+        if (playerDeckNames) {
+          summaryLines.push(`🃏 Deck: ${playerDeckNames}`);
+        }
 
         const battleSummary = summaryLines.join('\n');
 
@@ -677,7 +679,7 @@ export class EmbedBuilder {
           .setCustomId('refresh_stats')
           .setLabel('Refresh')
           .setStyle(ButtonStyle.Success)
-          .setEmoji('🔄')
+          .setEmoji('��')
       );
   }
 }
