@@ -722,20 +722,41 @@ async function handleBattles(message, args) {
     // Check rate limit
     checkRateLimit(message.author.id);
     
-    // Check if user is logged in
-    if (!userManager.isUserLoggedIn(message.author.id)) {
-      const errorEmbed = embedBuilder.createErrorEmbed(
-        new Error('You are not logged in. Please login first with `!cr login <player_tag>`'),
-        message.author
-      );
-      await message.reply({ embeds: [errorEmbed] });
-      return;
+    let playerTag;
+    
+    if (args.length === 0) {
+      // User wants their own battles
+      if (!userManager.isUserLoggedIn(message.author.id)) {
+        const errorEmbed = embedBuilder.createErrorEmbed(
+          new Error('You are not logged in. Please login first with `!cr login <player_tag>` or provide a player tag/Discord mention.'),
+          message.author
+        );
+        await message.reply({ embeds: [errorEmbed] });
+        return;
+      }
+      playerTag = userManager.getUserPlayerTag(message.author.id);
+    } else {
+      // Check if user provided a Discord mention
+      const mentionedUser = message.mentions.users.first();
+      if (mentionedUser) {
+        // User mentioned a Discord user
+        if (!userManager.isUserLoggedIn(mentionedUser.id)) {
+          const errorEmbed = embedBuilder.createErrorEmbed(
+            new Error(`**${mentionedUser.username}** is not logged in. They need to login first with \`!cr login <player_tag>\``),
+            message.author
+          );
+          await message.reply({ embeds: [errorEmbed] });
+          return;
+        }
+        playerTag = userManager.getUserPlayerTag(mentionedUser.id);
+      } else {
+        // User provided a player tag
+        playerTag = args[0];
+      }
     }
-
-    const userPlayerTag = userManager.getUserPlayerTag(message.author.id);
     
     // Get battle log from the API
-    const battleLog = await clashAPI.getBattleLog(userPlayerTag);
+    const battleLog = await clashAPI.getBattleLog(playerTag);
     
     if (!battleLog || battleLog.length === 0) {
       const errorEmbed = embedBuilder.createErrorEmbed(

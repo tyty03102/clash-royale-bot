@@ -349,7 +349,7 @@ export class EmbedBuilder {
       .addFields(
         { name: '🔐 **Login/Logout**', value: '`!cr login <player_tag>` - Login with your player tag\n`!cr logout` - Logout from your account', inline: false },
         { name: '📊 **Stats**', value: '`!cr stats` - View your stats\n`!cr stats <player_tag>` - View any player\'s stats\n`!cr stats @username` - View logged-in Discord user\'s stats\n`!cr deck` - Generate deck image\n`!cr deck <player_tag>` - Generate deck image for any player\n`!cr deck @username` - Generate deck image for Discord user', inline: false },
-        { name: '⚔️ **Battle Log**', value: '`!cr battles` - View your 5 most recent battles', inline: false },
+        { name: '⚔️ **Battle Log**', value: '`!cr battles` - View your 5 most recent battles\n`!cr battles <player_tag>` - View any player\'s battles\n`!cr battles @username` - View logged-in Discord user\'s battles', inline: false },
         { name: '🏆 **Challenges**', value: '`!cr challenges` - View currently available challenges', inline: false },
         { name: '⚔️ **Comparison**', value: '`!cr compare @username` - Compare your stats with another Discord user\n`!cr compare @user1 @user2` - Compare two Discord users', inline: false },
         { name: '👥 **Server**', value: '`!cr players` - List all logged in players in this server', inline: false },
