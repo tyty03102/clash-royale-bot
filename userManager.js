@@ -89,6 +89,47 @@ export class UserManager {
     }
   }
 
+  // Admin link a user to a Clash Royale account (allows multiple Discord accounts to share one Clash account)
+  async adminLinkUser(discordUserId, playerTag, clashAPI, discordUser = null) {
+    try {
+      // Validate player tag
+      if (!clashAPI.validatePlayerTag(playerTag)) {
+        throw new Error("Invalid player tag format. Player tags should be 8-9 characters long.");
+      }
+
+      // Fetch player data to verify the tag is valid
+      const playerStats = await clashAPI.getPlayerStats(playerTag);
+      
+      // Check if this Discord user is already logged in to a different account
+      const existingUserData = this.users.get(discordUserId);
+      if (existingUserData && existingUserData.playerTag !== playerStats.tag) {
+        console.log(`Admin link: User ${discordUser?.username || discordUserId} was logged in to ${existingUserData.playerTag}, now linking to ${playerStats.tag}`);
+      }
+      
+      // Store user data with Discord account information
+      this.users.set(discordUserId, {
+        playerTag: playerStats.tag,
+        playerName: playerStats.name,
+        discordUserId: discordUserId,
+        discordUsername: discordUser ? discordUser.username : null,
+        discordDisplayName: discordUser ? discordUser.displayName : null,
+        discordAvatar: discordUser ? discordUser.displayAvatarURL() : null,
+        loginTime: new Date(),
+        lastUpdated: new Date(),
+        adminLinked: true, // Mark that this was an admin link (allows sharing)
+        sharedAccount: true // Mark that this account can be shared
+      });
+
+      // Save to file
+      await this.saveUsersToFile();
+
+      return playerStats;
+    } catch (error) {
+      console.error("Error admin linking user:", error);
+      throw error;
+    }
+  }
+
   // Logout a user
   async logoutUser(discordUserId) {
     const wasLoggedIn = this.users.has(discordUserId);

@@ -1,6 +1,6 @@
 # Clash Royale Discord Bot
 
-A feature-rich Discord bot for viewing and comparing Clash Royale player statistics. Users can login with their player tags and view detailed stats, decks, and compare with other players. Now with enhanced admin controls, beautiful deck images, and improved user management.
+A feature-rich Discord bot for viewing and comparing Clash Royale player statistics. Users can login with their player tags and view detailed stats, decks, battle logs, and compare with other players. Now with enhanced admin controls, beautiful deck images, comprehensive battle analysis, and improved user management.
 
 ## Features
 
@@ -8,6 +8,7 @@ A feature-rich Discord bot for viewing and comparing Clash Royale player statist
 - 📊 **Detailed Statistics** - View comprehensive player stats including trophies, win rates, donations, etc.
 - 🃏 **Deck Information** - View current deck with card levels and elixir costs
 - 🎨 **Beautiful Deck Images** - Generate stunning visual deck layouts with card details
+- ⚔️ **Enhanced Battle Logs** - View detailed battle history with comprehensive match analysis
 - ⚔️ **Player Comparison** - Compare stats between two players
 - 👥 **Server Integration** - See all logged-in players in your Discord server
 - 🎨 **Beautiful Embeds** - Rich, colorful Discord embeds with all information
@@ -31,6 +32,8 @@ A feature-rich Discord bot for viewing and comparing Clash Royale player statist
 | `!cr deck` | Generate deck image (requires login) | `!cr deck` |
 | `!cr deck <player_tag>` | Generate deck image for any player | `!cr deck #V0VCP2909` |
 | `!cr deck @username` | Generate deck image for a logged-in user | `!cr deck @username` |
+| `!cr battles` | View your 5 most recent battles with detailed analysis | `!cr battles` |
+| `!cr challenges` | View currently available challenges and tournaments | `!cr challenges` |
 | `!cr compare <player_tag>` | Compare your stats with another player | `!cr compare #V0VCP2909` |
 | `!cr compare <player1> <player2>` | Compare two players | `!cr compare #V0VCP2909 #ABC123` |
 | `!cr compare @username` | Compare with a Discord user | `!cr compare @username` |
@@ -43,6 +46,7 @@ A feature-rich Discord bot for viewing and comparing Clash Royale player statist
 | Command | Description | Usage | Permissions |
 |---------|-------------|-------|-------------|
 | `!cr adminlogin @username <player_tag>` | Force login a user to a Clash Royale account | `!cr adminlogin @user #ABC123` | Admin Role/Admin |
+| `!cr adminlink @username <player_tag>` | Link Discord user to shared Clash Royale account (allows multiple users) | `!cr adminlink @user #ABC123` | Admin Role/Admin |
 | `!cr save` | Manually save all user data | `!cr save` | Admin Role/Admin |
 | `!cr reload` | Reload user data from storage | `!cr reload` | Admin Role/Admin |
 
@@ -155,7 +159,17 @@ npm run dev
    !cr deck
    ```
 
-4. **Compare with another player:**
+4. **View your recent battles:**
+   ```
+   !cr battles
+   ```
+
+5. **View available challenges:**
+   ```
+   !cr challenges
+   ```
+
+6. **Compare with another player:**
    ```
    !cr compare #ABC123
    ```
@@ -190,6 +204,11 @@ npm run dev
   !cr adminlogin @username #ABC123
   ```
 
+- **Link a Discord user to a shared Clash Royale account (allows multiple users):**
+  ```
+  !cr adminlink @username #ABC123
+  ```
+
 - **Manually save user data:**
   ```
   !cr save
@@ -210,6 +229,26 @@ npm run dev
 - Star points and experience level
 - Current arena
 - Clan information
+
+### Enhanced Battle Logs
+- **Comprehensive Battle Analysis** - View your 5 most recent battles with detailed information
+- **Battle Results** - Victory/Defeat/Draw with crown counts
+- **Trophy Progression** - Starting → ending trophies with change indicators
+- **Match Details** - Game mode, arena, battle type, league number
+- **Player Information** - Names, tags, clans for both players
+- **Tower Health** - King and Princess tower hit points for both sides
+- **Elixir Management** - Elixir leaked statistics for both players
+- **Deck Information** - Complete deck and support card lists
+- **Battle Context** - Ladder tournament status, deck selection, hosted match flags
+- **Timestamps** - Relative time formatting for easy reading
+
+### Available Challenges
+- **Current Challenges** - View all currently available challenges and tournaments
+- **Challenge Details** - Name, description, game mode, and format information
+- **Prize Information** - Detailed breakdown of rewards for different win counts
+- **Time Tracking** - Start and end times for each challenge
+- **Challenge Types** - Classic, Grand, Mega Draft, and special event challenges
+- **Format Details** - Win/loss limits, casual vs competitive modes
 
 ### Deck Information
 - **Beautiful Visual Deck Images** - Generate stunning PNG images of player decks
@@ -238,6 +277,7 @@ npm run dev
 
 ### Admin Features
 - **Force Login** - Admin can link any user to any Clash Royale account
+- **Shared Account Linking** - Admin can link multiple Discord users to the same Clash Royale account
 - **Data Management** - Manual save/reload of user data
 - **Role-based Access** - Admin commands restricted to specific roles
 - **Audit Trail** - Admin actions are logged and marked
@@ -327,7 +367,18 @@ If you encounter any issues:
 
 ## Changelog
 
-### v1.1.0 (Latest)
+### v1.2.0 (Latest)
+- ⚔️ **Enhanced Battle Logs** - Comprehensive battle analysis with detailed match information
+- 📊 **Battle Statistics** - Trophy progression, tower health, elixir management
+- 🎮 **Match Context** - Game modes, arenas, league numbers, tournament status
+- 🃏 **Deck Analysis** - Complete deck and support card information in battle logs
+- 🏆 **Player Details** - Names, tags, clans, and performance metrics
+- ⏰ **Time Tracking** - Relative timestamps for easy battle history reading
+- 🔍 **Battle Metadata** - Hosted matches, deck selection, ladder tournament flags
+- 🔗 **Shared Account Management** - Admin command to link multiple Discord users to the same Clash Royale account
+- 🏆 **Available Challenges** - View current challenges and tournaments with detailed information
+
+### v1.1.0
 - ✨ **New Admin Commands** - Force login, data management, and server administration
 - 🎨 **Enhanced Deck Images** - Beautiful visual deck layouts with professional styling
 - 💾 **Persistent Storage** - User data persists across bot restarts

@@ -288,6 +288,28 @@ export class EmbedBuilder {
     return embed;
   }
 
+  // Create admin link success embed
+  createAdminLinkSuccessEmbed(playerStats, targetUser, adminUser) {
+    const embed = new DiscordEmbedBuilder()
+      .setColor(this.colors.INFO)
+      .setTitle('🔗 Admin Account Link Successful')
+      .setDescription(`**${targetUser.username}** has been linked to **${playerStats.name}** by an administrator.\n\n⚠️ **This account can now be shared by multiple Discord users.**`)
+      .addFields(
+        { name: '🏆 **Player Info**', value: `Tag: \`${playerStats.tag}\`\nLevel: **${playerStats.expLevel}**\nArena: **${playerStats.arena.name}**`, inline: true },
+        { name: '📊 **Stats**', value: `Trophies: **${playerStats.trophies.toLocaleString()}**\nBest: **${playerStats.bestTrophies.toLocaleString()}**\nWins: **${playerStats.wins.toLocaleString()}**`, inline: true },
+        { name: '🏰 **Clan**', value: playerStats.clan ? `**${playerStats.clan.name}**` : 'No Clan', inline: true },
+        { name: '🔗 **Link Action**', value: `Account link performed by **${adminUser.username}**\nThis account can now be accessed by multiple Discord users.`, inline: false }
+      )
+      .setThumbnail('https://api-assets.clashroyale.com/arenas/54000009.png')
+      .setFooter({ 
+        text: `Admin link by ${adminUser.username}`,
+        iconURL: adminUser.displayAvatarURL()
+      })
+      .setTimestamp();
+
+    return embed;
+  }
+
   // Create error embed
   createErrorEmbed(error, discordUser = null) {
     const embed = new DiscordEmbedBuilder()
@@ -327,9 +349,11 @@ export class EmbedBuilder {
       .addFields(
         { name: '🔐 **Login/Logout**', value: '`!cr login <player_tag>` - Login with your player tag\n`!cr logout` - Logout from your account', inline: false },
         { name: '📊 **Stats**', value: '`!cr stats` - View your stats\n`!cr stats <player_tag>` - View any player\'s stats\n`!cr stats @username` - View logged-in Discord user\'s stats\n`!cr deck` - Generate deck image\n`!cr deck <player_tag>` - Generate deck image for any player\n`!cr deck @username` - Generate deck image for Discord user', inline: false },
+        { name: '⚔️ **Battle Log**', value: '`!cr battles` - View your 5 most recent battles', inline: false },
+        { name: '🏆 **Challenges**', value: '`!cr challenges` - View currently available challenges', inline: false },
         { name: '⚔️ **Comparison**', value: '`!cr compare @username` - Compare your stats with another Discord user\n`!cr compare @user1 @user2` - Compare two Discord users', inline: false },
         { name: '👥 **Server**', value: '`!cr players` - List all logged in players in this server', inline: false },
-        { name: '💾 **Admin**', value: '`!cr save` - Save user data to file\n`!cr reload` - Reload user data from file\n`!cr adminlogin @username <player_tag>` - Force login a Discord user (Admin only)', inline: false },
+        { name: '💾 **Admin**', value: '`!cr save` - Save user data to file\n`!cr reload` - Reload user data from file\n`!cr adminlogin @username <player_tag>` - Force login a Discord user (Admin only)\n`!cr adminlink @username <player_tag>` - Link Discord user to shared Clash account (Admin only)', inline: false },
         { name: '❓ **Help**', value: '`!cr help` - Show this help message', inline: false }
       )
       .addFields({
@@ -432,6 +456,209 @@ export class EmbedBuilder {
     }
   }
 
+  // Create battle log embed showing recent battles
+  createBattleLogEmbed(battles, discordUser = null) {
+    const embed = new DiscordEmbedBuilder()
+      .setColor(this.colors.INFO)
+      .setTitle('⚔️ Recent Battle Log')
+      .setDescription(`Showing the **5 most recent battles**`)
+      .setThumbnail('https://api-assets.clashroyale.com/arenas/54000009.png');
+
+    if (!battles || battles.length === 0) {
+      embed.addFields({
+        name: '❌ No Battles Found',
+        value: 'No recent battle data available for this player.',
+        inline: false
+      });
+    } else {
+      battles.forEach((battle, index) => {
+        const battleTime = new Date(battle.battleTime);
+        const formattedTime = `<t:${Math.floor(battleTime.getTime() / 1000)}:R>`;
+
+        // Get player and opponent info
+        const player = battle.team?.[0] || {};
+        const opponent = battle.opponent?.[0] || {};
+
+        // Determine result
+        const playerCrowns = player.crowns ?? 0;
+        const opponentCrowns = opponent.crowns ?? 0;
+        let result = 'Draw';
+        let resultEmoji = '🟡';
+        if (playerCrowns > opponentCrowns) {
+          result = 'Victory';
+          resultEmoji = '🟢';
+        } else if (playerCrowns < opponentCrowns) {
+          result = 'Defeat';
+          resultEmoji = '🔴';
+        }
+
+        // Trophies info
+        const startingTrophies = player.startingTrophies ?? null;
+        const trophyChange = typeof player.trophyChange === 'number' ? player.trophyChange : null;
+        const endingTrophies = (startingTrophies !== null && trophyChange !== null)
+          ? startingTrophies + trophyChange
+          : null;
+        const trophyEmoji = (trophyChange ?? 0) > 0 ? '📈' : (trophyChange ?? 0) < 0 ? '📉' : '➖';
+        const trophyChangeText = trophyChange !== null ? (trophyChange > 0 ? `+${trophyChange}` : `${trophyChange}`) : 'N/A';
+        const trophiesLine = (startingTrophies !== null && endingTrophies !== null)
+          ? `🏅 ${startingTrophies} → ${endingTrophies} (${trophyEmoji} ${trophyChangeText})`
+          : `🏅 ${trophyEmoji} ${trophyChangeText}`;
+
+        // HP info
+        const playerKTHP = player.kingTowerHitPoints ?? '—';
+        const playerPTHPArr = Array.isArray(player.princessTowersHitPoints) ? player.princessTowersHitPoints : [];
+        const playerPTHP = playerPTHPArr.length ? playerPTHPArr.join(', ') : '—';
+        const opponentKTHP = opponent.kingTowerHitPoints ?? '—';
+        const opponentPTHPArr = Array.isArray(opponent.princessTowersHitPoints) ? opponent.princessTowersHitPoints : [];
+        const opponentPTHP = opponentPTHPArr.length ? opponentPTHPArr.join(', ') : '—';
+
+        // Cards summary
+        const playerDeckNames = Array.isArray(player.cards)
+          ? player.cards.map(c => c?.name).filter(Boolean).join(', ')
+          : '';
+        const supportCardsNames = Array.isArray(player.supportCards)
+          ? player.supportCards.map(c => c?.name).filter(Boolean).join(', ')
+          : '';
+
+        // Misc battle info
+        const battleType = battle.type || 'Unknown';
+        const modeName = battle.gameMode?.name || 'Unknown Mode';
+        const arenaName = battle.arena?.name || 'Unknown Arena';
+        const isLadderTournament = battle.isLadderTournament ? 'Yes' : 'No';
+        const deckSelection = battle.deckSelection || 'unknown';
+        const leagueNumber = typeof battle.leagueNumber === 'number' ? ` • League ${battle.leagueNumber}` : '';
+        const isHostedMatch = battle.isHostedMatch ? 'Yes' : 'No';
+
+        const playerClan = player.clan?.name ? ` • Clan: ${player.clan.name}` : '';
+        const playerTag = player.tag ? ` (${player.tag})` : '';
+        const opponentTag = opponent.tag ? ` (${opponent.tag})` : '';
+
+        const playerElixirLeaked = typeof player.elixirLeaked === 'number' ? player.elixirLeaked.toFixed(2) : null;
+        const opponentElixirLeaked = typeof opponent.elixirLeaked === 'number' ? opponent.elixirLeaked.toFixed(2) : null;
+
+        const elixirLineParts = [];
+        if (playerElixirLeaked !== null) elixirLineParts.push(`You: ${playerElixirLeaked}`);
+        if (opponentElixirLeaked !== null) elixirLineParts.push(`Opp: ${opponentElixirLeaked}`);
+        const elixirLine = elixirLineParts.length ? `🧪 Elixir leaked — ${elixirLineParts.join(' | ')}` : '';
+
+        // Create battle summary
+        const summaryLines = [
+          `${resultEmoji} **${result}** (${playerCrowns}-${opponentCrowns})`,
+          trophiesLine,
+          `🎮 ${modeName} • ${battleType}${leagueNumber}`,
+          `🏟️ ${arenaName} • Ladder Tournament: ${isLadderTournament} • Deck: ${deckSelection}`,
+          `⏰ ${formattedTime} • Hosted Match: ${isHostedMatch}`,
+          `👤 ${player.name || 'You'}${playerTag}${playerClan}`,
+          `   K: ${playerKTHP} • P: ${playerPTHP}`,
+          `🆚 ${opponent.name || 'Opponent'}${opponentTag}`,
+          `   K: ${opponentKTHP} • P: ${opponentPTHP}`,
+        ];
+
+        if (elixirLine) summaryLines.push(elixirLine);
+        if (playerDeckNames) summaryLines.push(`🃏 Deck — ${playerDeckNames}`);
+        if (supportCardsNames) summaryLines.push(`🛡️ Support — ${supportCardsNames}`);
+
+        const battleSummary = summaryLines.join('\n');
+
+        embed.addFields({
+          name: `Battle ${index + 1}: ${player.name || 'You'} vs ${opponent.name || 'Opponent'}`,
+          value: battleSummary,
+          inline: false
+        });
+      });
+    }
+
+    embed.setFooter({ 
+      text: discordUser ? `Requested by ${discordUser.username}` : 'Battle Log',
+      iconURL: discordUser ? discordUser.displayAvatarURL() : null
+    })
+    .setTimestamp();
+
+    return embed;
+  }
+
+  // Create challenges embed showing available challenges
+  createChallengesEmbed(challenges, discordUser = null) {
+    const embed = new DiscordEmbedBuilder()
+      .setColor(this.colors.INFO)
+      .setTitle('🏆 Available Challenges')
+      .setDescription(`Showing **${challenges.length}** currently available challenges`)
+      .setThumbnail('https://api-assets.clashroyale.com/arenas/54000009.png');
+
+    if (!challenges || challenges.length === 0) {
+      embed.addFields({
+        name: '❌ No Challenges Found',
+        value: 'No challenges are currently available.',
+        inline: false
+      });
+    } else {
+      challenges.forEach((challengeGroup, groupIndex) => {
+        const challengeType = challengeGroup.type || 'Unknown';
+        const startTime = new Date(challengeGroup.startTime);
+        const endTime = new Date(challengeGroup.endTime);
+        const formattedStartTime = `<t:${Math.floor(startTime.getTime() / 1000)}:R>`;
+        const formattedEndTime = `<t:${Math.floor(endTime.getTime() / 1000)}:R>`;
+
+        // Add challenge group header
+        embed.addFields({
+          name: `📋 Challenge Group ${groupIndex + 1}: ${challengeType}`,
+          value: `⏰ **Duration:** ${formattedStartTime} → ${formattedEndTime}`,
+          inline: false
+        });
+
+        // Add individual challenges
+        if (challengeGroup.challenges && Array.isArray(challengeGroup.challenges)) {
+          challengeGroup.challenges.forEach((challenge, challengeIndex) => {
+            const challengeName = challenge.name || 'Unknown Challenge';
+            const description = challenge.description || 'No description available';
+            const gameMode = challenge.gameMode?.name || 'Unknown Mode';
+            const maxWins = challenge.maxWins || 0;
+            const maxLosses = challenge.maxLosses || 0;
+            const winMode = challenge.winMode || 'Unknown';
+            const isCasual = challenge.casual ? 'Yes' : 'No';
+
+            // Process prizes
+            const prizes = challenge.prizes || [];
+            const prizeSummary = prizes.map((prize, index) => {
+              if (prize.type === 'none') return null;
+              if (prize.type === 'consumable') {
+                return `${index + 1} win${index > 0 ? 's' : ''}: ${prize.amount}x ${prize.consumableName || 'Unknown Item'}`;
+              }
+              return `${index + 1} win${index > 0 ? 's' : ''}: ${prize.type}`;
+            }).filter(Boolean).join('\n');
+
+            const challengeInfo = [
+              `📝 **${description}**`,
+              `🎮 **Game Mode:** ${gameMode}`,
+              `🏆 **Format:** ${maxWins} wins or ${maxLosses} losses`,
+              `🎯 **Win Mode:** ${winMode}`,
+              `🎲 **Casual:** ${isCasual}`,
+              `⏰ **Active:** ${formattedStartTime} → ${formattedEndTime}`
+            ];
+
+            if (prizeSummary) {
+              challengeInfo.push(`\n🏅 **Prizes:**\n${prizeSummary}`);
+            }
+
+            embed.addFields({
+              name: `${challengeIndex + 1}. ${challengeName} (ID: ${challenge.id})`,
+              value: challengeInfo.join('\n'),
+              inline: false
+            });
+          });
+        }
+      });
+    }
+
+    embed.setFooter({ 
+      text: discordUser ? `Requested by ${discordUser.username}` : 'Available Challenges',
+      iconURL: discordUser ? discordUser.displayAvatarURL() : null
+    })
+    .setTimestamp();
+
+    return embed;
+  }
+
   // Create action row with buttons for interactive features
   createActionRow() {
     return new ActionRowBuilder()
@@ -450,7 +677,7 @@ export class EmbedBuilder {
           .setCustomId('refresh_stats')
           .setLabel('Refresh')
           .setStyle(ButtonStyle.Success)
-          .setEmoji('🔄')
+          .setEmoji('��')
       );
   }
 }

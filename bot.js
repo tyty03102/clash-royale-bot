@@ -91,8 +91,17 @@ async function handleCommand(message, command, args) {
     case 'reload':
       await handleReload(message);
       break;
+    case 'battles':
+      await handleBattles(message, args);
+      break;
+    case 'challenges':
+      await handleChallenges(message, args);
+      break;
     case 'adminlogin':
       await handleAdminLogin(message, args);
+      break;
+    case 'adminlink':
+      await handleAdminLink(message, args);
       break;
     default:
       const errorEmbed = embedBuilder.createErrorEmbed(
@@ -496,6 +505,55 @@ async function handleAdminLogin(message, args) {
   }
 }
 
+// Admin link command handler (admin only)
+async function handleAdminLink(message, args) {
+  // Check admin permissions
+  if (!hasAdminPermission(message.member)) {
+    const errorEmbed = embedBuilder.createErrorEmbed(
+      new Error('You do not have permission to use this command. This command is restricted to administrators only.'),
+      message.author
+    );
+    await message.reply({ embeds: [errorEmbed] });
+    return;
+  }
+
+  if (args.length < 2) {
+    const errorEmbed = embedBuilder.createErrorEmbed(
+      new Error('Please provide both a Discord member mention and a Clash Royale player tag. Usage: `!cr adminlink @username <player_tag>`'),
+      message.author
+    );
+    await message.reply({ embeds: [errorEmbed] });
+    return;
+  }
+
+  // Get mentioned user
+  const mentionedUser = message.mentions.users.first();
+  if (!mentionedUser) {
+    const errorEmbed = embedBuilder.createErrorEmbed(
+      new Error('Please mention a Discord user to link. Usage: `!cr adminlink @username <player_tag>`'),
+      message.author
+    );
+    await message.reply({ embeds: [errorEmbed] });
+    return;
+  }
+
+  const playerTag = args[1];
+  
+  try {
+    // Check rate limit
+    checkRateLimit(message.author.id);
+    
+    // Force link the mentioned user
+    const playerStats = await userManager.adminLinkUser(mentionedUser.id, playerTag, clashAPI, mentionedUser);
+    
+    const successEmbed = embedBuilder.createAdminLinkSuccessEmbed(playerStats, mentionedUser, message.author);
+    await message.reply({ embeds: [successEmbed] });
+  } catch (error) {
+    const errorEmbed = embedBuilder.createErrorEmbed(error, message.author);
+    await message.reply({ embeds: [errorEmbed] });
+  }
+}
+
 // Interaction handler for buttons and modals
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
@@ -656,6 +714,77 @@ function checkRateLimit(userId) {
   
   userLimit.count++;
   return true;
+}
+
+// Battles command handler
+async function handleBattles(message, args) {
+  try {
+    // Check rate limit
+    checkRateLimit(message.author.id);
+    
+    // Check if user is logged in
+    if (!userManager.isUserLoggedIn(message.author.id)) {
+      const errorEmbed = embedBuilder.createErrorEmbed(
+        new Error('You are not logged in. Please login first with `!cr login <player_tag>`'),
+        message.author
+      );
+      await message.reply({ embeds: [errorEmbed] });
+      return;
+    }
+
+    const userPlayerTag = userManager.getUserPlayerTag(message.author.id);
+    
+    // Get battle log from the API
+    const battleLog = await clashAPI.getBattleLog(userPlayerTag);
+    
+    if (!battleLog || battleLog.length === 0) {
+      const errorEmbed = embedBuilder.createErrorEmbed(
+        new Error('No battle data found for this player.'),
+        message.author
+      );
+      await message.reply({ embeds: [errorEmbed] });
+      return;
+    }
+
+    // Get the 5 most recent battles
+    const recentBattles = battleLog.slice(0, 5);
+    
+    // Create battle log embed
+    const battleLogEmbed = embedBuilder.createBattleLogEmbed(recentBattles, message.author);
+    await message.reply({ embeds: [battleLogEmbed] });
+    
+  } catch (error) {
+    const errorEmbed = embedBuilder.createErrorEmbed(error, message.author);
+    await message.reply({ embeds: [errorEmbed] });
+  }
+}
+
+// Challenges command handler
+async function handleChallenges(message, args) {
+  try {
+    // Check rate limit
+    checkRateLimit(message.author.id);
+    
+    // Get available challenges from the API
+    const challenges = await clashAPI.getChallenges();
+    
+    if (!challenges || challenges.length === 0) {
+      const errorEmbed = embedBuilder.createErrorEmbed(
+        new Error('No challenges currently available.'),
+        message.author
+      );
+      await message.reply({ embeds: [errorEmbed] });
+      return;
+    }
+    
+    // Create challenges embed
+    const challengesEmbed = embedBuilder.createChallengesEmbed(challenges, message.author);
+    await message.reply({ embeds: [challengesEmbed] });
+    
+  } catch (error) {
+    const errorEmbed = embedBuilder.createErrorEmbed(error, message.author);
+    await message.reply({ embeds: [errorEmbed] });
+  }
 }
 
 // Admin permission check function

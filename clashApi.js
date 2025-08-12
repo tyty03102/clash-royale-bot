@@ -76,6 +76,54 @@ export class ClashAPI {
     }
   }
 
+  async getBattleLog(playerTag) {
+    try {
+      // Remove # if present and add it back for the API call
+      const cleanTag = playerTag.replace('#', '');
+      const url = `${this.baseUrl}/players/%23${cleanTag}/battlelog`;
+
+      const response = await fetch(url, {
+        headers: {
+          "Authorization": `Bearer ${this.token}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching battle log:", error);
+      throw error;
+    }
+  }
+
+  async getChallenges() {
+    try {
+      const url = `${this.baseUrl}/challenges`;
+
+      const response = await fetch(url, {
+        headers: {
+          "Authorization": `Bearer ${this.token}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching challenges:", error);
+      throw error;
+    }
+  }
+
   // Helper method to validate player tag format
   validatePlayerTag(tag) {
     // Clash Royale player tags are 8-9 characters long and contain only specific characters

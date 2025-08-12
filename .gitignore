@@ -17,6 +17,8 @@ userData.json
 # API output files
 output.json
 deck_V0VCP2909_1754851654912.html
+battle_log_output.json
+locations_output.json
 
 # Logs
 logs
