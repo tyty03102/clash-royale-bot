@@ -736,16 +736,14 @@ async function handleCopyDeckButton(interaction) {
     // Try to generate a Clash Royale deck link
     const clashRoyaleLink = embedBuilder.generateClashRoyaleDeckLink(playerStats.currentDeck);
     
-    // Create success embed with deck info
-    let successMessage = `Deck copied successfully!\n\n**${playerStats.name}'s Deck:**\n\`\`\`${deckLink}\`\`\``;
+    // Create simple message with deck info (no embed)
+    let message = `📋 **${playerStats.name}'s Deck Copied!**\n\n\`\`\`${deckLink}\`\`\``;
     
     if (clashRoyaleLink) {
-      successMessage += `\n\n🔗 **Deck Link:** ${clashRoyaleLink}`;
+      message += `\n\n🔗 **Deck Link:** ${clashRoyaleLink}`;
     }
     
-    const successEmbed = embedBuilder.createSuccessEmbed(successMessage, interaction.user);
-    
-    await interaction.reply({ embeds: [successEmbed], ephemeral: true });
+    await interaction.reply({ content: message, ephemeral: true });
   } catch (error) {
     const errorEmbed = embedBuilder.createErrorEmbed(error, interaction.user);
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true });

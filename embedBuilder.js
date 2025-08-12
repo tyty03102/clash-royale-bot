@@ -198,14 +198,18 @@ export class EmbedBuilder {
     if (!deck || deck.length === 0) return null;
     
     // Clash Royale deck links use card IDs in a specific format
-    // This is a simplified version - you'd need the actual card ID mapping
+    // The format is: https://link.clashroyale.com/deck/en?deck=cardId1;cardId2;cardId3;...
     const cardIds = deck.map(card => {
-      // This would need to be replaced with actual card ID mapping
-      // For now, return a placeholder
-      return card.id || card.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-    });
+      // Use the card ID from the API response
+      return card.id || null;
+    }).filter(id => id !== null);
     
-    // Create the deck link format (this is a simplified example)
+    if (cardIds.length !== 8) {
+      console.log('Not all cards have IDs, cannot generate deck link');
+      return null;
+    }
+    
+    // Create the deck link format
     const deckLink = `https://link.clashroyale.com/deck/en?deck=${cardIds.join(';')}`;
     
     return deckLink;

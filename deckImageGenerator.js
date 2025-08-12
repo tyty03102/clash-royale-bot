@@ -174,9 +174,10 @@ export class DeckImageGenerator {
       // Use the card's iconUrls if available (this is what the HTML version uses)
       let imageUrl = null;
       
-      if (isEvolution && card.iconUrls && card.iconUrls.evolution) {
+      if (isEvolution && card.iconUrls && card.iconUrls.evolutionMedium) {
         // Use evolution image if available
-        imageUrl = card.iconUrls.evolution;
+        imageUrl = card.iconUrls.evolutionMedium;
+        console.log(`Using evolution image: ${imageUrl}`);
       } else if (card.iconUrls && card.iconUrls.medium) {
         imageUrl = card.iconUrls.medium;
       } else if (card.iconUrls && card.iconUrls['300']) {
