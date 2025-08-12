@@ -677,7 +677,7 @@ export class EmbedBuilder {
           .setCustomId('refresh_stats')
           .setLabel('Refresh')
           .setStyle(ButtonStyle.Success)
-          .setEmoji('��')
+          .setEmoji('🔄')
       );
   }
 }
