@@ -152,12 +152,18 @@ export class DeckImageGenerator {
     ctx.lineWidth = 3;
     ctx.strokeRect(x, y, width, height);
     
+    // Check if this is an evolution card
+    const isEvolution = card.evolutionLevel && card.evolutionLevel > 0;
+    
     // Try to load and display actual card image
     try {
       // Use the card's iconUrls if available (this is what the HTML version uses)
       let imageUrl = null;
       
-      if (card.iconUrls && card.iconUrls.medium) {
+      if (isEvolution && card.iconUrls && card.iconUrls.evolution) {
+        // Use evolution image if available
+        imageUrl = card.iconUrls.evolution;
+      } else if (card.iconUrls && card.iconUrls.medium) {
         imageUrl = card.iconUrls.medium;
       } else if (card.iconUrls && card.iconUrls['300']) {
         imageUrl = card.iconUrls['300'];
@@ -204,14 +210,33 @@ export class DeckImageGenerator {
       ctx.fillText(card.name, x + width/2, y + width/2 + 10);
     }
     
+    // Evolution indicator - add a special badge for evolution cards
+    if (isEvolution) {
+      // Draw evolution badge in top-right corner
+      ctx.fillStyle = '#ffd700'; // Gold color for evolution
+      ctx.beginPath();
+      ctx.arc(x + width - 15, y + 15, 12, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Add evolution text
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 10px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('EVO', x + width - 15, y + 15);
+    }
+    
     // Card name - positioned below the image area (like HTML version)
     ctx.fillStyle = '#ffd700';
     ctx.font = 'bold 14px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     
+    // Add evolution indicator to name if it's an evolution card
+    const cardName = isEvolution ? `${card.name} (Evolved)` : card.name;
+    
     // Don't truncate names - show full names like HTML version
-    ctx.fillText(card.name, x + width/2, y + height - 70);
+    ctx.fillText(cardName, x + width/2, y + height - 70);
     
     // Card level (like HTML version)
     ctx.fillStyle = '#b8c5d6';

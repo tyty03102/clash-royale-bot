@@ -147,6 +147,70 @@ export class EmbedBuilder {
     return embed;
   }
 
+  // Create deck embed with copy button
+  createDeckEmbedWithCopyButton(playerStats, discordUser = null) {
+    const embed = this.createDeckEmbed(playerStats, discordUser);
+    
+    // Add evolution count info if there are evolution cards
+    const deck = playerStats.currentDeck || [];
+    const evolutionCount = deck.filter(card => card.evolutionLevel && card.evolutionLevel > 0).length;
+    
+    if (evolutionCount > 0) {
+      embed.addFields({
+        name: '🔄 **Evolution Cards**',
+        value: `This deck contains **${evolutionCount} evolution card${evolutionCount > 1 ? 's' : ''}**`,
+        inline: false
+      });
+    }
+    
+    return embed;
+  }
+
+  // Generate deck link for copying
+  generateDeckLink(deck) {
+    if (!deck || deck.length === 0) return null;
+    
+    // Create a formatted deck string that can be copied
+    let deckString = '🃏 **Deck Composition:**\n';
+    
+    deck.forEach((card, index) => {
+      const evolutionText = card.evolutionLevel && card.evolutionLevel > 0 ? ' (Evolved)' : '';
+      const rarityEmoji = this.getRarityEmoji(card.rarity);
+      deckString += `${index + 1}. ${rarityEmoji} **${card.name}**${evolutionText}\n`;
+      deckString += `   Level: ${card.level} | Elixir: ${card.elixirCost}\n\n`;
+    });
+    
+    // Add summary
+    const totalElixir = deck.reduce((sum, card) => sum + card.elixirCost, 0);
+    const avgElixir = (totalElixir / deck.length).toFixed(1);
+    const evolutionCount = deck.filter(card => card.evolutionLevel && card.evolutionLevel > 0).length;
+    
+    deckString += `📊 **Deck Summary:**\n`;
+    deckString += `• Average Elixir: ${avgElixir}\n`;
+    deckString += `• Total Elixir: ${totalElixir}\n`;
+    deckString += `• Evolution Cards: ${evolutionCount}\n`;
+    
+    return deckString;
+  }
+
+  // Generate Clash Royale deck link (for importing into game)
+  generateClashRoyaleDeckLink(deck) {
+    if (!deck || deck.length === 0) return null;
+    
+    // Clash Royale deck links use card IDs in a specific format
+    // This is a simplified version - you'd need the actual card ID mapping
+    const cardIds = deck.map(card => {
+      // This would need to be replaced with actual card ID mapping
+      // For now, return a placeholder
+      return card.id || card.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    });
+    
+    // Create the deck link format (this is a simplified example)
+    const deckLink = `https://link.clashroyale.com/deck/en?deck=${cardIds.join(';')}`;
+    
+    return deckLink;
+  }
+
   // Create enhanced comparison embed with more detailed stats
   createComparisonEmbed(player1Stats, player2Stats, discordUser = null, player1DiscordUser = null, player2DiscordUser = null) {
     const embed = new DiscordEmbedBuilder()
@@ -670,6 +734,11 @@ export class EmbedBuilder {
           .setLabel('View Deck')
           .setStyle(ButtonStyle.Primary)
           .setEmoji('🃏'),
+        new ButtonBuilder()
+          .setCustomId('copy_deck')
+          .setLabel('Copy Deck')
+          .setStyle(ButtonStyle.Secondary)
+          .setEmoji('📋'),
         new ButtonBuilder()
           .setCustomId('compare_stats')
           .setLabel('Compare')

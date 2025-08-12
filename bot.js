@@ -253,12 +253,18 @@ async function handleDeck(message, args) {
     
     const playerStats = await clashAPI.getPlayerStats(playerTag);
     
-    // Generate deck image instead of embed
+    // Generate deck image
     const deckImage = await deckImageGenerator.generateDeckImage(playerStats);
     
-    // Send the PNG image as an attachment
+    // Create deck embed with copy button
+    const deckEmbed = embedBuilder.createDeckEmbedWithCopyButton(playerStats, message.author);
+    const actionRow = embedBuilder.createActionRow();
+    
+    // Send the PNG image as an attachment with embed and buttons
     await message.reply({
       content: `🃏 **${playerStats.name}'s Current Deck**`,
+      embeds: [deckEmbed],
+      components: [actionRow],
       files: [{
         attachment: deckImage.filepath,
         name: deckImage.filename
@@ -564,6 +570,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
         case 'view_deck':
           await handleDeckButton(interaction);
           break;
+        case 'copy_deck':
+          await handleCopyDeckButton(interaction);
+          break;
         case 'compare_stats':
           await handleCompareButton(interaction);
           break;
@@ -607,12 +616,18 @@ async function handleDeckButton(interaction) {
     const playerTag = userManager.getUserPlayerTag(interaction.user.id);
     const playerStats = await clashAPI.getPlayerStats(playerTag);
     
-    // Generate deck image instead of embed
+    // Generate deck image
     const deckImage = await deckImageGenerator.generateDeckImage(playerStats);
     
-    // Send the PNG image as an attachment
+    // Create deck embed with copy button
+    const deckEmbed = embedBuilder.createDeckEmbedWithCopyButton(playerStats, interaction.user);
+    const actionRow = embedBuilder.createActionRow();
+    
+    // Send the PNG image as an attachment with embed and buttons
     await interaction.reply({
       content: `🃏 **${playerStats.name}'s Current Deck**`,
+      embeds: [deckEmbed],
+      components: [actionRow],
       files: [{
         attachment: deckImage.filepath,
         name: deckImage.filename
@@ -687,6 +702,54 @@ async function handleRefreshButton(interaction) {
     const statsEmbed = embedBuilder.createPlayerStatsEmbed(playerStats, interaction.user);
     
     await interaction.reply({ embeds: [statsEmbed], ephemeral: true });
+  } catch (error) {
+    const errorEmbed = embedBuilder.createErrorEmbed(error, interaction.user);
+    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+  }
+}
+
+async function handleCopyDeckButton(interaction) {
+  try {
+    // Check rate limit
+    checkRateLimit(interaction.user.id);
+    
+    if (!userManager.isUserLoggedIn(interaction.user.id)) {
+      const errorEmbed = embedBuilder.createErrorEmbed(
+        new Error('You are not logged in. Please login first with `!cr login <player_tag>`'),
+        interaction.user
+      );
+      await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+      return;
+    }
+
+    const playerTag = userManager.getUserPlayerTag(interaction.user.id);
+    const playerStats = await clashAPI.getPlayerStats(playerTag);
+    
+    // Generate deck link
+    const deckLink = embedBuilder.generateDeckLink(playerStats.currentDeck);
+    
+    if (!deckLink) {
+      const errorEmbed = embedBuilder.createErrorEmbed(
+        new Error('No deck found to copy.'),
+        interaction.user
+      );
+      await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+      return;
+    }
+    
+    // Try to generate a Clash Royale deck link
+    const clashRoyaleLink = embedBuilder.generateClashRoyaleDeckLink(playerStats.currentDeck);
+    
+    // Create success embed with deck info
+    let successMessage = `Deck copied successfully!\n\n**${playerStats.name}'s Deck:**\n\`\`\`${deckLink}\`\`\``;
+    
+    if (clashRoyaleLink) {
+      successMessage += `\n\n🔗 **Deck Link:** ${clashRoyaleLink}`;
+    }
+    
+    const successEmbed = embedBuilder.createSuccessEmbed(successMessage, interaction.user);
+    
+    await interaction.reply({ embeds: [successEmbed], ephemeral: true });
   } catch (error) {
     const errorEmbed = embedBuilder.createErrorEmbed(error, interaction.user);
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
