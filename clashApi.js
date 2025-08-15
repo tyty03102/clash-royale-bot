@@ -132,10 +132,7 @@ export class ClashAPI {
         throw new Error('No battle data found for this player');
       }
 
-      // Debug: Log the structure of the first battle to understand the format
-      if (battleLog.length > 0) {
-        console.log('Battle log structure example:', JSON.stringify(battleLog[0], null, 2));
-      }
+
 
       // Find the most recent battle where the player has deck data
       for (let battle of battleLog) {
@@ -147,8 +144,8 @@ export class ClashAPI {
         // Check if this is a 1v1 battle
         if (battle.team && battle.team.length > 0) {
           const playerInTeam = battle.team.find(member => member.tag === playerTag);
-          if (playerInTeam && playerInTeam.deck) {
-            playerDeck = playerInTeam.deck;
+          if (playerInTeam && playerInTeam.cards) {
+            playerDeck = playerInTeam.cards;
             gameMode = battle.gameMode?.name || 'Ladder';
           }
         }
@@ -156,8 +153,8 @@ export class ClashAPI {
         // Check opponent team if not found in team
         if (!playerDeck && battle.opponent && battle.opponent.length > 0) {
           const playerInOpponent = battle.opponent.find(member => member.tag === playerTag);
-          if (playerInOpponent && playerInOpponent.deck) {
-            playerDeck = playerInOpponent.deck;
+          if (playerInOpponent && playerInOpponent.cards) {
+            playerDeck = playerInOpponent.cards;
             gameMode = battle.gameMode?.name || 'Ladder';
           }
         }
@@ -165,16 +162,16 @@ export class ClashAPI {
         // Check if this is a 2v2 battle or other format
         if (!playerDeck && battle.team1 && battle.team1.length > 0) {
           const playerInTeam1 = battle.team1.find(member => member.tag === playerTag);
-          if (playerInTeam1 && playerInTeam1.deck) {
-            playerDeck = playerInTeam1.deck;
+          if (playerInTeam1 && playerInTeam1.cards) {
+            playerDeck = playerInTeam1.cards;
             gameMode = battle.gameMode?.name || '2v2';
           }
         }
 
         if (!playerDeck && battle.team2 && battle.team2.length > 0) {
           const playerInTeam2 = battle.team2.find(member => member.tag === playerTag);
-          if (playerInTeam2 && playerInTeam2.deck) {
-            playerDeck = playerInTeam2.deck;
+          if (playerInTeam2 && playerInTeam2.cards) {
+            playerDeck = playerInTeam2.cards;
             gameMode = battle.gameMode?.name || '2v2';
           }
         }
