@@ -132,36 +132,75 @@ export class ClashAPI {
         throw new Error('No battle data found for this player');
       }
 
-      // Find the most recent battle where the player was the team leader
+      // Debug: Log the structure of the first battle to understand the format
+      if (battleLog.length > 0) {
+        console.log('Battle log structure example:', JSON.stringify(battleLog[0], null, 2));
+      }
+
+      // Find the most recent battle where the player has deck data
       for (let battle of battleLog) {
-        // Check if player was in team 1 (usually the player's team)
+        // The battle log structure can vary, so we need to check different possible structures
+        let playerDeck = null;
+        let gameMode = 'Unknown';
+        let battleTime = battle.battleTime;
+
+        // Check if this is a 1v1 battle
         if (battle.team && battle.team.length > 0) {
           const playerInTeam = battle.team.find(member => member.tag === playerTag);
           if (playerInTeam && playerInTeam.deck) {
-            return {
-              deck: playerInTeam.deck,
-              battleTime: battle.battleTime,
-              gameMode: battle.gameMode?.name || 'Unknown',
-              battleType: battle.type || 'Unknown'
-            };
+            playerDeck = playerInTeam.deck;
+            gameMode = battle.gameMode?.name || 'Ladder';
           }
         }
         
-        // Also check opponent team in case player was in team 2
-        if (battle.opponent && battle.opponent.length > 0) {
+        // Check opponent team if not found in team
+        if (!playerDeck && battle.opponent && battle.opponent.length > 0) {
           const playerInOpponent = battle.opponent.find(member => member.tag === playerTag);
           if (playerInOpponent && playerInOpponent.deck) {
-            return {
-              deck: playerInOpponent.deck,
-              battleTime: battle.battleTime,
-              gameMode: battle.gameMode?.name || 'Unknown',
-              battleType: battle.type || 'Unknown'
-            };
+            playerDeck = playerInOpponent.deck;
+            gameMode = battle.gameMode?.name || 'Ladder';
           }
+        }
+
+        // Check if this is a 2v2 battle or other format
+        if (!playerDeck && battle.team1 && battle.team1.length > 0) {
+          const playerInTeam1 = battle.team1.find(member => member.tag === playerTag);
+          if (playerInTeam1 && playerInTeam1.deck) {
+            playerDeck = playerInTeam1.deck;
+            gameMode = battle.gameMode?.name || '2v2';
+          }
+        }
+
+        if (!playerDeck && battle.team2 && battle.team2.length > 0) {
+          const playerInTeam2 = battle.team2.find(member => member.tag === playerTag);
+          if (playerInTeam2 && playerInTeam2.deck) {
+            playerDeck = playerInTeam2.deck;
+            gameMode = battle.gameMode?.name || '2v2';
+          }
+        }
+
+        // If we found a deck, return it
+        if (playerDeck && playerDeck.length === 8) {
+          return {
+            deck: playerDeck,
+            battleTime: battleTime,
+            gameMode: gameMode,
+            battleType: battle.type || 'Unknown'
+          };
         }
       }
 
-      throw new Error('No recent deck found in battle history');
+      // If we still haven't found a deck, try a more flexible approach
+      // Look for any deck data in the battle log
+      for (let battle of battleLog) {
+        // Try to find deck data anywhere in the battle object
+        const battleStr = JSON.stringify(battle);
+        if (battleStr.includes('"deck"')) {
+          console.log('Found deck data in battle, but structure is unexpected:', battleStr.substring(0, 500));
+        }
+      }
+
+      throw new Error('No recent deck found in battle history. The player may not have played any recent battles, may have a private profile, or the battle log structure is not supported.');
     } catch (error) {
       console.error("Error getting most recent deck:", error);
       throw error;
