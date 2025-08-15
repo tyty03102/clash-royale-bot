@@ -152,7 +152,7 @@ export class EmbedBuilder {
     const embed = new DiscordEmbedBuilder()
       .setColor(this.getRatingColor(deckAnalysis.rating.rating))
       .setTitle(`🔍 ${playerStats.name}'s Deck Analysis`)
-      .setDescription(`**${deckSource}** • **${deckAnalysis.archetype}** • Average Elixir: **${deckAnalysis.averageElixir}**`)
+      .setDescription(`**${deckAnalysis.deckName || 'Auto-Generated Deck'}**\n**${deckSource}** • **${deckAnalysis.archetype}** • Average Elixir: **${deckAnalysis.averageElixir}**`)
       .setThumbnail('https://api-assets.clashroyale.com/cards/300/CoZdp5PpsTH858l212lAMeJxVJ0zxv9V-f5xC8Bvj5g.png');
 
     // Rating and meta score

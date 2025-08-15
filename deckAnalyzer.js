@@ -1,13 +1,14 @@
 export class DeckAnalyzer {
   constructor() {
-    // Card database with meta information
+    // Card database with meta information (updated with all cards from cards_output.json)
     this.cardDatabase = {
       // Win conditions
       winConditions: [
         'Giant', 'Golem', 'Royal Giant', 'Hog Rider', 'Balloon', 'X-Bow', 'Mortar', 
         'Goblin Barrel', 'Graveyard', 'Royal Hogs', 'Ram Rider', 'Elixir Golem',
         'Goblin Giant', 'Lava Hound', 'Miner', 'Wall Breakers', 'Skeleton Barrel',
-        'Giant Skeleton', 'Sparky', 'Mega Knight', 'P.E.K.K.A', 'Electro Giant'
+        'Giant Skeleton', 'Sparky', 'Mega Knight', 'P.E.K.K.A', 'Electro Giant',
+        'Goblin Drill', 'Goblin Machine', 'Rune Giant', 'Boss Bandit'
       ],
       
       // Spells
@@ -15,29 +16,49 @@ export class DeckAnalyzer {
         'Arrows', 'Fireball', 'Zap', 'Poison', 'Lightning', 'Rocket', 'Freeze',
         'Mirror', 'Clone', 'Tornado', 'Earthquake', 'Heal', 'Rage', 'The Log',
         'Barbarian Barrel', 'Giant Snowball', 'Royal Delivery', 'Graveyard',
-        'Goblin Barrel', 'Skeleton Barrel', 'Wall Breakers'
+        'Goblin Barrel', 'Skeleton Barrel', 'Wall Breakers', 'Void', 'Goblin Curse'
       ],
       
       // Buildings
       buildings: [
         'Cannon', 'Inferno Tower', 'Tesla', 'Bomb Tower', 'X-Bow', 'Mortar',
-        'Goblin Hut', 'Barbarian Hut', 'Furnace', 'Tombstone', 'Goblin Cage',
+        'Goblin Hut', 'Barbarian Hut', 'Tombstone', 'Goblin Cage',
         'Inferno Dragon', 'Elixir Collector', 'Goblin Drill'
       ],
       
-      // Support cards
+      // Support cards (complete list from cards_output.json)
       supportCards: [
-        'Wizard', 'Witch', 'Valkyrie', 'Knight', 'Archers', 'Goblins', 'Spear Goblins',
-        'Skeletons', 'Skeleton Army', 'Minions', 'Minion Horde', 'Baby Dragon',
-        'Mega Minion', 'Dart Goblin', 'Princess', 'Ice Wizard', 'Electro Wizard',
-        'Musketeer', 'Hunter', 'Executioner', 'Bowler', 'Dark Prince', 'Prince',
-        'Bandit', 'Royal Ghost', 'Magic Archer', 'Fisherman', 'Cannon Cart',
-        'Skeleton Dragons', 'Mother Witch', 'Goblin Gang', 'Fire Spirits',
-        'Ice Spirit', 'Bats', 'Guards', 'Lumberjack', 'Inferno Dragon',
-        'Night Witch', 'Lava Hound', 'Golem', 'P.E.K.K.A', 'Giant Skeleton',
-        'Sparky', 'Mega Knight', 'Electro Giant', 'Royal Recruits', 'Elite Barbarians',
-        'Royal Hogs', 'Three Musketeers', 'Goblin Barrel', 'Graveyard',
-        'Skeleton Barrel', 'Wall Breakers', 'Ram Rider', 'Elixir Golem'
+        // Common troops
+        'Knight', 'Archers', 'Goblins', 'Giant', 'P.E.K.K.A', 'Minions', 'Balloon', 'Witch', 
+        'Barbarians', 'Skeletons', 'Valkyrie', 'Skeleton Army', 'Bomber', 'Musketeer', 
+        'Baby Dragon', 'Prince', 'Wizard', 'Mini P.E.K.K.A', 'Spear Goblins', 'Giant Skeleton', 
+        'Hog Rider', 'Minion Horde', 'Ice Wizard', 'Royal Giant', 'Guards', 'Princess', 
+        'Dark Prince', 'Three Musketeers', 'Lava Hound', 'Ice Spirit', 'Fire Spirit', 
+        'Miner', 'Sparky', 'Bowler', 'Lumberjack', 'Battle Ram', 'Inferno Dragon', 
+        'Ice Golem', 'Mega Minion', 'Dart Goblin', 'Goblin Gang', 'Electro Wizard', 
+        'Elite Barbarians', 'Hunter', 'Executioner', 'Bandit', 'Royal Recruits', 
+        'Night Witch', 'Bats', 'Royal Ghost', 'Ram Rider', 'Zappies', 'Rascals', 
+        'Cannon Cart', 'Mega Knight', 'Skeleton Barrel', 'Flying Machine', 'Wall Breakers', 
+        'Royal Hogs', 'Goblin Giant', 'Fisherman', 'Magic Archer', 'Electro Dragon', 
+        'Firecracker', 'Mighty Miner', 'Elixir Golem', 'Battle Healer', 'Skeleton King', 
+        'Archer Queen', 'Golden Knight', 'Monk', 'Skeleton Dragons', 'Mother Witch', 
+        'Electro Spirit', 'Electro Giant', 'Phoenix', 'Little Prince', 'Goblin Demolisher', 
+        'Goblin Machine', 'Suspicious Bush', 'Goblinstein', 'Rune Giant', 'Berserker', 
+        'Boss Bandit',
+        
+        // Buildings (support role)
+        'Cannon', 'Goblin Hut', 'Mortar', 'Inferno Tower', 'Bomb Tower', 'Barbarian Hut', 
+        'Tesla', 'Elixir Collector', 'X-Bow', 'Tombstone', 'Furnace', 'Goblin Cage', 
+        'Goblin Drill',
+        
+        // Spells (support role)
+        'Fireball', 'Arrows', 'Rage', 'Rocket', 'Goblin Barrel', 'Freeze', 'Mirror', 
+        'Lightning', 'Zap', 'Poison', 'Graveyard', 'The Log', 'Tornado', 'Clone', 
+        'Earthquake', 'Barbarian Barrel', 'Heal Spirit', 'Giant Snowball', 'Royal Delivery', 
+        'Void', 'Goblin Curse', 'Spirit Empress',
+        
+        // Support items
+        'Tower Princess', 'Cannoneer', 'Dagger Duchess', 'Royal Chef'
       ]
     };
 
@@ -75,18 +96,32 @@ export class DeckAnalyzer {
       }
     };
 
-    // Common deck synergies
+    // Common deck synergies (updated with current meta and all cards)
     this.synergies = {
       'Giant': ['Witch', 'Wizard', 'Musketeer', 'Baby Dragon', 'Mega Minion'],
       'Golem': ['Night Witch', 'Baby Dragon', 'Mega Minion', 'Lumberjack'],
       'Hog Rider': ['Fireball', 'Zap', 'Ice Spirit', 'Goblins', 'Cannon'],
       'X-Bow': ['Tesla', 'Archers', 'Knight', 'Ice Spirit', 'Fireball'],
       'Balloon': ['Lava Hound', 'Baby Dragon', 'Mega Minion', 'Freeze'],
-      'Royal Giant': ['Furnace', 'Fireball', 'Zap', 'Mega Minion'],
-      'Goblin Barrel': ['Princess', 'Goblin Gang', 'Knight', 'Inferno Tower'],
-      'Graveyard': ['Freeze', 'Poison', 'Baby Dragon', 'Knight'],
-      'Royal Hogs': ['Earthquake', 'Fireball', 'Zap', 'Cannon Cart'],
-      'Ram Rider': ['Battle Ram', 'Bandit', 'Royal Ghost', 'Dark Prince']
+      'Royal Giant': ['Furnace', 'Fireball', 'Zap', 'Mega Minion', 'Hunter', 'Royal Ghost'],
+      'Goblin Barrel': ['Princess', 'Goblin Gang', 'Knight', 'Inferno Tower', 'Valkyrie'],
+      'Graveyard': ['Freeze', 'Poison', 'Baby Dragon', 'Knight', 'Furnace', 'Goblin Hut'],
+      'Royal Hogs': ['Earthquake', 'Fireball', 'Zap', 'Cannon Cart', 'Royal Recruits', 'Zappies'],
+      'Ram Rider': ['Battle Ram', 'Bandit', 'Royal Ghost', 'Dark Prince'],
+      'Goblin Giant': ['Sparky', 'Dark Prince', 'Electro Wizard', 'Heal Spirit', 'Rage'],
+      'Sparky': ['Goblin Giant', 'Dark Prince', 'Electro Wizard', 'Heal Spirit', 'Rage'],
+      'Royal Recruits': ['Royal Hogs', 'Zappies', 'Flying Machine', 'Goblin Cage'],
+      'Wall Breakers': ['Goblin Barrel', 'Valkyrie', 'Princess', 'Dart Goblin'],
+      'Furnace': ['Graveyard', 'Royal Giant', 'Berserker', 'Ice Spirit'],
+      'Lava Hound': ['Balloon', 'Baby Dragon', 'Mega Minion', 'Lightning'],
+      'Mega Knight': ['Witch', 'Wizard', 'Baby Dragon', 'Mega Minion'],
+      'P.E.K.K.A': ['Witch', 'Wizard', 'Baby Dragon', 'Mega Minion'],
+      'Electro Giant': ['Witch', 'Wizard', 'Baby Dragon', 'Mega Minion'],
+      'Miner': ['Balloon', 'Wall Breakers', 'Goblin Barrel', 'Poison'],
+      'Elixir Golem': ['Battle Healer', 'Giant Skeleton', 'Rage'],
+      'Skeleton Barrel': ['Goblin Barrel', 'Princess', 'Goblin Gang', 'Valkyrie'],
+      'Giant Skeleton': ['Witch', 'Wizard', 'Baby Dragon', 'Mega Minion'],
+      'Mortar': ['Tesla', 'Archers', 'Knight', 'Ice Spirit', 'Fireball']
     };
   }
 
@@ -97,6 +132,7 @@ export class DeckAnalyzer {
 
     const analysis = {
       deck: deck,
+      deckName: this.generateDeckName(deck),
       averageElixir: this.calculateAverageElixir(deck),
       archetype: this.determineArchetype(deck),
       winCondition: this.findWinCondition(deck),
@@ -133,6 +169,22 @@ export class DeckAnalyzer {
 
   findSupportCards(deck) {
     return deck.filter(card => this.cardDatabase.supportCards.includes(card.name));
+  }
+
+  findEvolutionCards(deck) {
+    return deck.filter(card => card.evolutionLevel && card.evolutionLevel > 0);
+  }
+
+  findMetaCards(deck) {
+    // Current meta cards based on August 2025 balance changes (established meta only)
+    const currentMetaCards = [
+      'Goblin Giant', 'Sparky', 'Elite Barbarians', 'Archers', 'Tesla', 'X-Bow',
+      'Royal Recruits', 'Royal Hogs', 'Zappies', 'Flying Machine', 'Goblin Cage',
+      'Witch', 'Graveyard', 'Goblin Hut', 'Valkyrie', 'Wall Breakers', 'Dart Goblin',
+      'Royal Giant', 'Hunter', 'Royal Ghost', 'Furnace', 'Berserker', 'Lumberjack',
+      'Electro Dragon', 'Balloon', 'Bowler', 'Inferno Dragon', 'Freeze'
+    ];
+    return deck.filter(card => currentMetaCards.includes(card.name));
   }
 
   determineArchetype(deck) {
@@ -212,6 +264,18 @@ export class DeckAnalyzer {
     const synergies = this.analyzeSynergies(deck);
     if (synergies.length > 0) {
       strengths.push(`✅ Good card synergies with ${synergies.length} win condition(s)`);
+    }
+
+    // Check for evolution cards
+    const evolutionCards = this.findEvolutionCards(deck);
+    if (evolutionCards.length > 0) {
+      strengths.push(`✅ Has ${evolutionCards.length} evolution card(s): ${evolutionCards.map(c => c.name).join(', ')}`);
+    }
+
+    // Check for meta relevance
+    const metaCards = this.findMetaCards(deck);
+    if (metaCards.length >= 3) {
+      strengths.push(`✅ Good meta relevance with ${metaCards.length} current meta cards`);
     }
 
     return strengths;
@@ -327,6 +391,45 @@ export class DeckAnalyzer {
       });
     }
 
+    // Evolution recommendations
+    const evolutionCards = this.findEvolutionCards(deck);
+    if (evolutionCards.length === 0) {
+      recommendations.push({
+        type: 'meta',
+        message: 'Consider adding evolution cards for better meta performance',
+        priority: 'medium'
+      });
+    }
+
+    // Meta recommendations
+    const metaCards = this.findMetaCards(deck);
+    if (metaCards.length < 3) {
+      recommendations.push({
+        type: 'meta',
+        message: 'Add more current meta cards for better competitive performance',
+        priority: 'medium'
+      });
+    }
+
+    // Specific meta deck recommendations
+    const deckWinConditions = this.findWinCondition(deck);
+    deckWinConditions.forEach(wc => {
+      if (wc.name === 'Graveyard' && !deck.some(c => c.name === 'Furnace')) {
+        recommendations.push({
+          type: 'synergy',
+          message: 'Furnace works great with Graveyard for continuous pressure',
+          priority: 'high'
+        });
+      }
+      if (wc.name === 'Royal Giant' && !deck.some(c => c.name === 'Furnace')) {
+        recommendations.push({
+          type: 'synergy',
+          message: 'Furnace provides excellent support for Royal Giant pushes',
+          priority: 'high'
+        });
+      }
+    });
+
     return recommendations;
   }
 
@@ -360,6 +463,14 @@ export class DeckAnalyzer {
     // Score for having win conditions
     const winConditions = this.findWinCondition(deck);
     score += winConditions.length * 10;
+
+    // Bonus for evolution cards (current meta trend)
+    const evolutionCards = this.findEvolutionCards(deck);
+    score += evolutionCards.length * 8;
+
+    // Bonus for current meta cards
+    const metaCards = this.findMetaCards(deck);
+    score += metaCards.length * 5;
 
     return Math.min(100, score);
   }
@@ -408,32 +519,226 @@ export class DeckAnalyzer {
     return descriptions[rating] || 'Unknown rating';
   }
 
-  // Get popular meta decks for comparison
+  // Auto-generate deck name based on composition and archetype
+  generateDeckName(deck) {
+    const archetype = this.determineArchetype(deck);
+    const avgElixir = parseFloat(this.calculateAverageElixir(deck));
+    const evolutionCards = this.findEvolutionCards(deck);
+    const winConditions = this.findWinCondition(deck);
+    const spells = this.findSpells(deck);
+    
+    // Get key cards for naming
+    const keyCards = this.getKeyCardsForNaming(deck);
+    
+    // Build the name components
+    let nameComponents = [];
+    
+    // Add evolution cards first if present
+    if (evolutionCards.length > 0) {
+      const evoCardNames = evolutionCards.map(card => card.name);
+      nameComponents.push(`Evo ${evoCardNames[0]}`);
+    }
+    
+    // Add key cards (up to 3)
+    const cardNames = keyCards.slice(0, 3).map(card => card.name);
+    nameComponents = nameComponents.concat(cardNames);
+    
+    // Add elixir cost if it's notable
+    if (avgElixir <= 3.2) {
+      nameComponents.push(`${avgElixir.toFixed(1)}`);
+    }
+    
+    // Add archetype
+    nameComponents.push(archetype);
+    
+    // Add special modifiers
+    const modifiers = this.getDeckModifiers(deck);
+    if (modifiers.length > 0) {
+      nameComponents.push(modifiers[0]); // Use first modifier
+    }
+    
+    return nameComponents.join(' ');
+  }
+
+  // Get key cards for deck naming (prioritizes win conditions, evolution cards, and unique cards)
+  getKeyCardsForNaming(deck) {
+    const evolutionCards = this.findEvolutionCards(deck);
+    const winConditions = this.findWinCondition(deck);
+    const spells = this.findSpells(deck);
+    
+    let keyCards = [];
+    
+    // Add evolution cards first
+    keyCards = keyCards.concat(evolutionCards);
+    
+    // Add win conditions
+    keyCards = keyCards.concat(winConditions);
+    
+    // Add unique spells or support cards
+    const remainingCards = deck.filter(card => 
+      !keyCards.some(keyCard => keyCard.name === card.name)
+    );
+    
+    // Prioritize unique cards (not in keyCards yet)
+    const uniqueCards = remainingCards.filter(card => 
+      !this.isCommonCard(card.name)
+    );
+    
+    keyCards = keyCards.concat(uniqueCards);
+    
+    // If we still need more cards, add from remaining
+    if (keyCards.length < 3) {
+      const moreCards = remainingCards.filter(card => 
+        !keyCards.some(keyCard => keyCard.name === card.name)
+      );
+      keyCards = keyCards.concat(moreCards);
+    }
+    
+    return keyCards;
+  }
+
+  // Check if a card is common (used in many decks)
+  isCommonCard(cardName) {
+    const commonCards = [
+      'Zap', 'The Log', 'Fireball', 'Arrows', 'Ice Spirit', 'Skeletons',
+      'Knight', 'Archers', 'Goblin Gang', 'Cannon', 'Tesla'
+    ];
+    return commonCards.includes(cardName);
+  }
+
+  // Get special modifiers for deck names
+  getDeckModifiers(deck) {
+    const modifiers = [];
+    const avgElixir = parseFloat(this.calculateAverageElixir(deck));
+    const spells = this.findSpells(deck);
+    const buildings = this.findBuildings(deck);
+    
+    // Cycle modifier
+    if (avgElixir <= 3.0) {
+      modifiers.push('Cycle');
+    }
+    
+    // Bait modifier
+    if (this.isBaitDeck(deck)) {
+      modifiers.push('Bait');
+    }
+    
+    // Control modifier
+    if (this.isControlDeck(deck)) {
+      modifiers.push('Control');
+    }
+    
+    // Beatdown modifier
+    if (this.isBeatdownDeck(deck)) {
+      modifiers.push('Beatdown');
+    }
+    
+    // Siege modifier
+    if (this.isSiegeDeck(deck)) {
+      modifiers.push('Siege');
+    }
+    
+    // Bridge Spam modifier
+    if (this.isBridgeSpamDeck(deck)) {
+      modifiers.push('Bridge Spam');
+    }
+    
+    return modifiers;
+  }
+
+  // Check if deck is a bait deck
+  isBaitDeck(deck) {
+    const baitCards = ['Goblin Barrel', 'Princess', 'Dart Goblin', 'Goblin Gang', 'Skeleton Barrel'];
+    const baitCount = deck.filter(card => baitCards.includes(card.name)).length;
+    return baitCount >= 2;
+  }
+
+  // Check if deck is a control deck
+  isControlDeck(deck) {
+    const controlCards = ['Graveyard', 'Witch', 'Ice Wizard', 'Poison', 'Tornado'];
+    const controlCount = deck.filter(card => controlCards.includes(card.name)).length;
+    return controlCount >= 2;
+  }
+
+  // Check if deck is a beatdown deck
+  isBeatdownDeck(deck) {
+    const beatdownCards = ['Golem', 'Lava Hound', 'Giant', 'Royal Giant', 'Goblin Giant', 'Electro Giant'];
+    const beatdownCount = deck.filter(card => beatdownCards.includes(card.name)).length;
+    return beatdownCount >= 1;
+  }
+
+  // Check if deck is a siege deck
+  isSiegeDeck(deck) {
+    const siegeCards = ['X-Bow', 'Mortar'];
+    const siegeCount = deck.filter(card => siegeCards.includes(card.name)).length;
+    return siegeCount >= 1;
+  }
+
+  // Check if deck is a bridge spam deck
+  isBridgeSpamDeck(deck) {
+    const bridgeSpamCards = ['Royal Hogs', 'Elite Barbarians', 'Dark Prince', 'Royal Ghost', 'Bandit'];
+    const bridgeSpamCount = deck.filter(card => bridgeSpamCards.includes(card.name)).length;
+    return bridgeSpamCount >= 2;
+  }
+
+  // Get popular meta decks for comparison (updated August 2025)
   getMetaDecks() {
     return [
       {
-        name: 'Hog 2.6 Cycle',
-        cards: ['Hog Rider', 'Cannon', 'Fireball', 'Zap', 'Ice Spirit', 'Skeletons', 'Musketeer', 'Knight'],
-        archetype: 'Cycle',
-        rating: 'S'
+        name: 'GobGiant Sparky EBarbs',
+        cards: ['Goblin Giant', 'Zap', 'Elite Barbarians', 'Sparky', 'Dark Prince', 'Electro Wizard', 'Heal Spirit', 'Rage'],
+        archetype: 'Bridge Spam',
+        rating: 'S',
+        meta: 'Current Top Meta'
       },
       {
-        name: 'Golem Beatdown',
-        cards: ['Golem', 'Night Witch', 'Baby Dragon', 'Mega Minion', 'Lumberjack', 'Zap', 'Poison', 'Tombstone'],
-        archetype: 'Beatdown',
-        rating: 'A'
-      },
-      {
-        name: 'X-Bow 2.9',
-        cards: ['X-Bow', 'Tesla', 'Archers', 'Knight', 'Ice Spirit', 'Fireball', 'The Log', 'Skeletons'],
+        name: 'X-Bow eSpirit Cycle',
+        cards: ['Archers', 'Tesla', 'X-Bow', 'Knight', 'Skeletons', 'Electro Spirit', 'Fireball', 'The Log'],
         archetype: 'Siege',
-        rating: 'A'
+        rating: 'S',
+        meta: 'Current Top Meta'
       },
       {
-        name: 'Log Bait',
-        cards: ['Goblin Barrel', 'Princess', 'Knight', 'Inferno Tower', 'Goblin Gang', 'The Log', 'Rocket', 'Ice Spirit'],
+        name: 'Royal Hogs Recruits Fireball Cage',
+        cards: ['Royal Recruits', 'Goblin Cage', 'Royal Hogs', 'Zappies', 'Flying Machine', 'Fireball', 'Arrows', 'Barbarian Barrel'],
+        archetype: 'Bridge Spam',
+        rating: 'S',
+        meta: 'Current Top Meta'
+      },
+      {
+        name: 'Evo Witch Gob Hut Graveyard',
+        cards: ['Knight', 'Witch', 'Graveyard', 'Ice Wizard', 'Skeletons', 'Goblin Hut', 'Poison', 'Barbarian Barrel'],
+        archetype: 'Control',
+        rating: 'A',
+        meta: 'Current Meta'
+      },
+      {
+        name: 'Evo Valk Wall Breakers Log Bait',
+        cards: ['Goblin Barrel', 'Valkyrie', 'Wall Breakers', 'Princess', 'Dart Goblin', 'Goblin Gang', 'Ice Spirit', 'Cannon'],
         archetype: 'Spell Bait',
-        rating: 'A'
+        rating: 'A',
+        meta: 'Current Meta'
+      },
+      {
+        name: '3.1 Royal Giant Ghost Cycle',
+        cards: ['Royal Giant', 'Hunter', 'Royal Ghost', 'Fisherman', 'Skeletons', 'Electro Spirit', 'Lightning', 'The Log'],
+        archetype: 'Cycle',
+        rating: 'A',
+        meta: 'Current Meta'
+      },
+      {
+        name: 'Evo Furnace Berserker Graveyard',
+        cards: ['Knight', 'Furnace', 'Graveyard', 'Berserker', 'Ice Spirit', 'Goblin Hut', 'Poison', 'Barbarian Barrel'],
+        archetype: 'Control',
+        rating: 'A',
+        meta: 'Current Meta'
+      },
+      {
+        name: 'Double Elixir Loon Freeze',
+        cards: ['Lumberjack', 'Electro Dragon', 'Balloon', 'Bowler', 'Inferno Dragon', 'Freeze', 'Tornado', 'Barbarian Barrel'],
+        archetype: 'Beatdown',
+        rating: 'A',
+        meta: 'Current Meta'
       }
     ];
   }
