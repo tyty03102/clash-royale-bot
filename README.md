@@ -33,9 +33,9 @@ A feature-rich Discord bot for viewing and comparing Clash Royale player statist
 | `!cr deck` | Generate deck image (requires login) | `!cr deck` |
 | `!cr deck <player_tag>` | Generate deck image for any player | `!cr deck #V0VCP2909` |
 | `!cr deck @username` | Generate deck image for a logged-in user | `!cr deck @username` |
-| `!cr decks` | Analyze deck with recommendations (requires login) | `!cr decks` |
-| `!cr decks <player_tag>` | Analyze any player's deck | `!cr decks #V0VCP2909` |
-| `!cr decks @username` | Analyze a logged-in user's deck | `!cr decks @username` |
+| `!cr deck check` | Analyze deck with recommendations (requires login) | `!cr deck check` |
+| `!cr deck check <player_tag>` | Analyze any player's deck | `!cr deck check #V0VCP2909` |
+| `!cr deck check @username` | Analyze a logged-in user's deck | `!cr deck check @username` |
 | `!cr battles` | View your 5 most recent battles with detailed analysis | `!cr battles` |
 | `!cr battles <player_tag>` | View any player's 5 most recent battles | `!cr battles #V0VCP2909` |
 | `!cr battles @username` | View a logged-in Discord user's battles | `!cr battles @username` |
@@ -173,17 +173,17 @@ npm run dev
 
 - **Analyze your deck with recommendations:**
   ```
-  !cr decks
+  !cr deck check
   ```
 
 - **Analyze any player's deck:**
   ```
-  !cr decks #V0VCP2909
+  !cr deck check #V0VCP2909
   ```
 
 - **Analyze a logged-in Discord user's deck:**
   ```
-  !cr decks @username
+  !cr deck check @username
   ```
 
 - **Compare two specific players:**

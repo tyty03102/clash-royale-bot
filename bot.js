@@ -80,10 +80,11 @@ async function handleCommand(message, command, args) {
       await handleStats(message, args);
       break;
     case 'deck':
-      await handleDeck(message, args);
-      break;
-    case 'decks':
-      await handleDeckAnalysis(message, args);
+      if (args.length > 0 && args[0] === 'check') {
+        await handleDeckAnalysis(message, args.slice(1));
+      } else {
+        await handleDeck(message, args);
+      }
       break;
     case 'compare':
       await handleCompare(message, args);
@@ -262,21 +263,38 @@ async function handleDeckAnalysis(message, args) {
     
     const playerStats = await clashAPI.getPlayerStats(playerTag);
     
-    // Check if player has a deck
-    if (!playerStats.currentDeck || playerStats.currentDeck.length === 0) {
-      const errorEmbed = embedBuilder.createErrorEmbed(
-        new Error('This player does not have a current deck set.'),
-        message.author
-      );
-      await message.reply({ embeds: [errorEmbed] });
-      return;
+    // Get the most recent deck from battle logs
+    let recentDeckData;
+    let deckSource = 'Current Deck';
+    
+    try {
+      recentDeckData = await clashAPI.getMostRecentDeck(playerTag);
+      deckSource = `Most Recent Deck (${recentDeckData.gameMode})`;
+    } catch (error) {
+      console.log('Could not get recent deck, using current deck:', error.message);
+      // Fall back to current deck if no recent deck found
+      if (!playerStats.currentDeck || playerStats.currentDeck.length === 0) {
+        const errorEmbed = embedBuilder.createErrorEmbed(
+          new Error('No deck found for this player.'),
+          message.author
+        );
+        await message.reply({ embeds: [errorEmbed] });
+        return;
+      }
+      recentDeckData = { deck: playerStats.currentDeck };
     }
+    
+    // Create a temporary player stats object with the recent deck
+    const tempPlayerStats = {
+      ...playerStats,
+      currentDeck: recentDeckData.deck
+    };
 
     // Analyze the deck
-    const deckAnalysis = deckAnalyzer.analyzeDeck(playerStats.currentDeck);
+    const deckAnalysis = deckAnalyzer.analyzeDeck(recentDeckData.deck);
     
     // Create deck analysis embed
-    const analysisEmbed = embedBuilder.createDeckAnalysisEmbed(deckAnalysis, playerStats, message.author);
+    const analysisEmbed = embedBuilder.createDeckAnalysisEmbed(deckAnalysis, tempPlayerStats, message.author, deckSource);
     
     // Create action row with buttons
     const actionRow = embedBuilder.createActionRow();
@@ -333,17 +351,42 @@ async function handleDeck(message, args) {
     
     const playerStats = await clashAPI.getPlayerStats(playerTag);
     
+    // Get the most recent deck from battle logs
+    let recentDeckData;
+    let deckSource = 'Current Deck';
+    
+    try {
+      recentDeckData = await clashAPI.getMostRecentDeck(playerTag);
+      deckSource = `Most Recent Deck (${recentDeckData.gameMode})`;
+    } catch (error) {
+      console.log('Could not get recent deck, using current deck:', error.message);
+      // Fall back to current deck if no recent deck found
+      if (!playerStats.currentDeck || playerStats.currentDeck.length === 0) {
+        const errorEmbed = embedBuilder.createErrorEmbed(
+          new Error('No deck found for this player.'),
+          message.author
+        );
+        await message.reply({ embeds: [errorEmbed] });
+        return;
+      }
+      recentDeckData = { deck: playerStats.currentDeck };
+    }
+    
+    // Create a temporary player stats object with the recent deck
+    const tempPlayerStats = {
+      ...playerStats,
+      currentDeck: recentDeckData.deck
+    };
+    
     // Generate deck image
-    const deckImage = await deckImageGenerator.generateDeckImage(playerStats);
+    const deckImage = await deckImageGenerator.generateDeckImage(tempPlayerStats);
     
     // Create action row with buttons
     const actionRow = embedBuilder.createActionRow();
     
-
-    
     // Send the PNG image as an attachment with just buttons
     await message.reply({
-      content: `🃏 **${playerStats.name}'s Current Deck**`,
+      content: `🃏 **${playerStats.name}'s ${deckSource}**`,
       components: [actionRow],
       files: [{
         attachment: deckImage.filepath,
@@ -698,21 +741,38 @@ async function handleAnalyzeDeckButton(interaction) {
     const playerTag = userManager.getUserPlayerTag(interaction.user.id);
     const playerStats = await clashAPI.getPlayerStats(playerTag);
     
-    // Check if player has a deck
-    if (!playerStats.currentDeck || playerStats.currentDeck.length === 0) {
-      const errorEmbed = embedBuilder.createErrorEmbed(
-        new Error('You do not have a current deck set.'),
-        interaction.user
-      );
-      await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-      return;
+    // Get the most recent deck from battle logs
+    let recentDeckData;
+    let deckSource = 'Current Deck';
+    
+    try {
+      recentDeckData = await clashAPI.getMostRecentDeck(playerTag);
+      deckSource = `Most Recent Deck (${recentDeckData.gameMode})`;
+    } catch (error) {
+      console.log('Could not get recent deck, using current deck:', error.message);
+      // Fall back to current deck if no recent deck found
+      if (!playerStats.currentDeck || playerStats.currentDeck.length === 0) {
+        const errorEmbed = embedBuilder.createErrorEmbed(
+          new Error('You do not have a current deck set.'),
+          interaction.user
+        );
+        await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+        return;
+      }
+      recentDeckData = { deck: playerStats.currentDeck };
     }
+    
+    // Create a temporary player stats object with the recent deck
+    const tempPlayerStats = {
+      ...playerStats,
+      currentDeck: recentDeckData.deck
+    };
 
     // Analyze the deck
-    const deckAnalysis = deckAnalyzer.analyzeDeck(playerStats.currentDeck);
+    const deckAnalysis = deckAnalyzer.analyzeDeck(recentDeckData.deck);
     
     // Create deck analysis embed
-    const analysisEmbed = embedBuilder.createDeckAnalysisEmbed(deckAnalysis, playerStats, interaction.user);
+    const analysisEmbed = embedBuilder.createDeckAnalysisEmbed(deckAnalysis, tempPlayerStats, interaction.user, deckSource);
     
     await interaction.reply({ 
       embeds: [analysisEmbed],

@@ -124,6 +124,50 @@ export class ClashAPI {
     }
   }
 
+  async getMostRecentDeck(playerTag) {
+    try {
+      const battleLog = await this.getBattleLog(playerTag);
+      
+      if (!battleLog || battleLog.length === 0) {
+        throw new Error('No battle data found for this player');
+      }
+
+      // Find the most recent battle where the player was the team leader
+      for (let battle of battleLog) {
+        // Check if player was in team 1 (usually the player's team)
+        if (battle.team && battle.team.length > 0) {
+          const playerInTeam = battle.team.find(member => member.tag === playerTag);
+          if (playerInTeam && playerInTeam.deck) {
+            return {
+              deck: playerInTeam.deck,
+              battleTime: battle.battleTime,
+              gameMode: battle.gameMode?.name || 'Unknown',
+              battleType: battle.type || 'Unknown'
+            };
+          }
+        }
+        
+        // Also check opponent team in case player was in team 2
+        if (battle.opponent && battle.opponent.length > 0) {
+          const playerInOpponent = battle.opponent.find(member => member.tag === playerTag);
+          if (playerInOpponent && playerInOpponent.deck) {
+            return {
+              deck: playerInOpponent.deck,
+              battleTime: battle.battleTime,
+              gameMode: battle.gameMode?.name || 'Unknown',
+              battleType: battle.type || 'Unknown'
+            };
+          }
+        }
+      }
+
+      throw new Error('No recent deck found in battle history');
+    } catch (error) {
+      console.error("Error getting most recent deck:", error);
+      throw error;
+    }
+  }
+
   // Helper method to validate player tag format
   validatePlayerTag(tag) {
     // Clash Royale player tags are 8-9 characters long and contain only specific characters
