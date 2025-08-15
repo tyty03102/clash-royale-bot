@@ -8,6 +8,7 @@ A feature-rich Discord bot for viewing and comparing Clash Royale player statist
 - 📊 **Detailed Statistics** - View comprehensive player stats including trophies, win rates, donations, etc.
 - 🃏 **Deck Information** - View current deck with card levels and elixir costs
 - 🎨 **Beautiful Deck Images** - Generate stunning visual deck layouts with card details
+- 🔍 **Deck Analysis** - Get detailed deck analysis with recommendations similar to deckshop.pro
 - ⚔️ **Enhanced Battle Logs** - View detailed battle history with comprehensive match analysis
 - ⚔️ **Player Comparison** - Compare stats between two players
 - 👥 **Server Integration** - See all logged-in players in your Discord server
@@ -32,6 +33,9 @@ A feature-rich Discord bot for viewing and comparing Clash Royale player statist
 | `!cr deck` | Generate deck image (requires login) | `!cr deck` |
 | `!cr deck <player_tag>` | Generate deck image for any player | `!cr deck #V0VCP2909` |
 | `!cr deck @username` | Generate deck image for a logged-in user | `!cr deck @username` |
+| `!cr decks` | Analyze deck with recommendations (requires login) | `!cr decks` |
+| `!cr decks <player_tag>` | Analyze any player's deck | `!cr decks #V0VCP2909` |
+| `!cr decks @username` | Analyze a logged-in user's deck | `!cr decks @username` |
 | `!cr battles` | View your 5 most recent battles with detailed analysis | `!cr battles` |
 | `!cr battles <player_tag>` | View any player's 5 most recent battles | `!cr battles #V0VCP2909` |
 | `!cr battles @username` | View a logged-in Discord user's battles | `!cr battles @username` |
@@ -165,6 +169,21 @@ npm run dev
 - **View battles for a logged-in Discord user:**
   ```
   !cr battles @username
+  ```
+
+- **Analyze your deck with recommendations:**
+  ```
+  !cr decks
+  ```
+
+- **Analyze any player's deck:**
+  ```
+  !cr decks #V0VCP2909
+  ```
+
+- **Analyze a logged-in Discord user's deck:**
+  ```
+  !cr decks @username
   ```
 
 - **Compare two specific players:**

@@ -147,6 +147,99 @@ export class EmbedBuilder {
     return embed;
   }
 
+  // Create deck analysis embed with recommendations
+  createDeckAnalysisEmbed(deckAnalysis, playerStats, discordUser = null) {
+    const embed = new DiscordEmbedBuilder()
+      .setColor(this.getRatingColor(deckAnalysis.rating.rating))
+      .setTitle(`🔍 ${playerStats.name}'s Deck Analysis`)
+      .setDescription(`**${deckAnalysis.archetype}** • Average Elixir: **${deckAnalysis.averageElixir}**`)
+      .setThumbnail('https://api-assets.clashroyale.com/cards/300/CoZdp5PpsTH858l212lAMeJxVJ0zxv9V-f5xC8Bvj5g.png');
+
+    // Rating and meta score
+    const stars = '⭐'.repeat(deckAnalysis.rating.stars);
+    embed.addFields({
+      name: `🏆 **Deck Rating: ${deckAnalysis.rating.rating}** ${stars}`,
+      value: `**Meta Score:** ${deckAnalysis.metaScore}/100\n**${deckAnalysis.rating.description}**`,
+      inline: false
+    });
+
+    // Deck composition
+    const winConditions = deckAnalysis.winCondition.map(wc => wc.name).join(', ') || 'None';
+    const spells = deckAnalysis.spells.map(s => s.name).join(', ') || 'None';
+    const buildings = deckAnalysis.buildings.map(b => b.name).join(', ') || 'None';
+
+    embed.addFields(
+      { name: '🎯 **Win Conditions**', value: winConditions, inline: true },
+      { name: '⚡ **Spells**', value: spells, inline: true },
+      { name: '🏗️ **Buildings**', value: buildings, inline: true }
+    );
+
+    // Synergies
+    if (deckAnalysis.synergies.length > 0) {
+      let synergyText = '';
+      deckAnalysis.synergies.forEach(synergy => {
+        synergyText += `**${synergy.winCondition}** + ${synergy.presentCards.join(', ')} (${synergy.synergyScore.toFixed(0)}%)\n`;
+      });
+      embed.addFields({
+        name: '🤝 **Card Synergies**',
+        value: synergyText,
+        inline: false
+      });
+    }
+
+    // Strengths
+    if (deckAnalysis.strengths.length > 0) {
+      embed.addFields({
+        name: '✅ **Strengths**',
+        value: deckAnalysis.strengths.join('\n'),
+        inline: false
+      });
+    }
+
+    // Weaknesses
+    if (deckAnalysis.weaknesses.length > 0) {
+      embed.addFields({
+        name: '❌ **Weaknesses**',
+        value: deckAnalysis.weaknesses.join('\n'),
+        inline: false
+      });
+    }
+
+    // Recommendations
+    if (deckAnalysis.recommendations.length > 0) {
+      let recommendationsText = '';
+      deckAnalysis.recommendations.forEach(rec => {
+        const priorityEmoji = rec.priority === 'high' ? '🔴' : rec.priority === 'medium' ? '🟡' : '🟢';
+        recommendationsText += `${priorityEmoji} **${rec.type.toUpperCase()}:** ${rec.message}\n`;
+      });
+      embed.addFields({
+        name: '💡 **Recommendations**',
+        value: recommendationsText,
+        inline: false
+      });
+    }
+
+    embed.setFooter({ 
+      text: discordUser ? `Requested by ${discordUser.username}` : 'Deck Analysis',
+      iconURL: discordUser ? discordUser.displayAvatarURL() : null
+    })
+    .setTimestamp();
+
+    return embed;
+  }
+
+  // Get color based on deck rating
+  getRatingColor(rating) {
+    const colors = {
+      'S': 0x00ff00, // Green
+      'A': 0x00ff88, // Light green
+      'B': 0xffff00, // Yellow
+      'C': 0xff8800, // Orange
+      'D': 0xff0000  // Red
+    };
+    return colors[rating] || this.colors.INFO;
+  }
+
 
 
   // Create enhanced comparison embed with more detailed stats
@@ -350,7 +443,7 @@ export class EmbedBuilder {
       .setDescription('Here are all the available commands:')
       .addFields(
         { name: '🔐 **Login/Logout**', value: '`!cr login <player_tag>` - Login with your player tag\n`!cr logout` - Logout from your account', inline: false },
-        { name: '📊 **Stats**', value: '`!cr stats` - View your stats\n`!cr stats <player_tag>` - View any player\'s stats\n`!cr stats @username` - View logged-in Discord user\'s stats\n`!cr deck` - Generate deck image\n`!cr deck <player_tag>` - Generate deck image for any player\n`!cr deck @username` - Generate deck image for Discord user', inline: false },
+        { name: '📊 **Stats**', value: '`!cr stats` - View your stats\n`!cr stats <player_tag>` - View any player\'s stats\n`!cr stats @username` - View logged-in Discord user\'s stats\n`!cr deck` - Generate deck image\n`!cr deck <player_tag>` - Generate deck image for any player\n`!cr deck @username` - Generate deck image for Discord user\n`!cr decks` - Analyze deck with recommendations\n`!cr decks <player_tag>` - Analyze any player\'s deck\n`!cr decks @username` - Analyze Discord user\'s deck', inline: false },
         { name: '⚔️ **Battle Log**', value: '`!cr battles` - View your 5 most recent battles\n`!cr battles <player_tag>` - View any player\'s battles\n`!cr battles @username` - View logged-in Discord user\'s battles', inline: false },
         { name: '🏆 **Challenges**', value: '`!cr challenges` - View currently available challenges', inline: false },
         { name: '⚔️ **Comparison**', value: '`!cr compare @username` - Compare your stats with another Discord user\n`!cr compare @user1 @user2` - Compare two Discord users', inline: false },
@@ -672,6 +765,12 @@ export class EmbedBuilder {
           .setLabel('View Deck')
           .setStyle(ButtonStyle.Primary)
           .setEmoji('🃏'),
+
+        new ButtonBuilder()
+          .setCustomId('analyze_deck')
+          .setLabel('Analyze Deck')
+          .setStyle(ButtonStyle.Secondary)
+          .setEmoji('🔍'),
 
         new ButtonBuilder()
           .setCustomId('compare_stats')

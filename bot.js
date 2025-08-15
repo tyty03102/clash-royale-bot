@@ -4,6 +4,7 @@ import { ClashAPI } from './clashApi.js';
 import { UserManager } from './userManager.js';
 import { EmbedBuilder } from './embedBuilder.js';
 import { DeckImageGenerator } from './deckImageGenerator.js';
+import { DeckAnalyzer } from './deckAnalyzer.js';
 import fs from 'fs';
 
 // Create Discord client
@@ -20,6 +21,7 @@ const clashAPI = new ClashAPI();
 const userManager = new UserManager();
 const embedBuilder = new EmbedBuilder();
 const deckImageGenerator = new DeckImageGenerator();
+const deckAnalyzer = new DeckAnalyzer();
 
 // Rate limiting
 const rateLimits = new Map(); // userId -> { count: number, resetTime: number }
@@ -79,6 +81,9 @@ async function handleCommand(message, command, args) {
       break;
     case 'deck':
       await handleDeck(message, args);
+      break;
+    case 'decks':
+      await handleDeckAnalysis(message, args);
       break;
     case 'compare':
       await handleCompare(message, args);
@@ -210,6 +215,77 @@ async function handleStats(message, args) {
       embeds: [statsEmbed],
       components: [actionRow]
     });
+  } catch (error) {
+    const errorEmbed = embedBuilder.createErrorEmbed(error, message.author);
+    await message.reply({ embeds: [errorEmbed] });
+  }
+}
+
+// Deck analysis command handler
+async function handleDeckAnalysis(message, args) {
+  let playerTag;
+  
+  if (args.length === 0) {
+    // User wants their own deck analysis
+    if (!userManager.isUserLoggedIn(message.author.id)) {
+      const errorEmbed = embedBuilder.createErrorEmbed(
+        new Error('You are not logged in. Please login first with `!cr login <player_tag>` or provide a player tag/Discord mention.'),
+        message.author
+      );
+      await message.reply({ embeds: [errorEmbed] });
+      return;
+    }
+    playerTag = userManager.getUserPlayerTag(message.author.id);
+  } else {
+    // Check if user provided a Discord mention
+    const mentionedUser = message.mentions.users.first();
+    if (mentionedUser) {
+      // User mentioned a Discord user
+      if (!userManager.isUserLoggedIn(mentionedUser.id)) {
+        const errorEmbed = embedBuilder.createErrorEmbed(
+          new Error(`**${mentionedUser.username}** is not logged in. They need to login first with \`!cr login <player_tag>\``),
+          message.author
+        );
+        await message.reply({ embeds: [errorEmbed] });
+        return;
+      }
+      playerTag = userManager.getUserPlayerTag(mentionedUser.id);
+    } else {
+      // User provided a player tag
+      playerTag = args[0];
+    }
+  }
+
+  try {
+    // Check rate limit
+    checkRateLimit(message.author.id);
+    
+    const playerStats = await clashAPI.getPlayerStats(playerTag);
+    
+    // Check if player has a deck
+    if (!playerStats.currentDeck || playerStats.currentDeck.length === 0) {
+      const errorEmbed = embedBuilder.createErrorEmbed(
+        new Error('This player does not have a current deck set.'),
+        message.author
+      );
+      await message.reply({ embeds: [errorEmbed] });
+      return;
+    }
+
+    // Analyze the deck
+    const deckAnalysis = deckAnalyzer.analyzeDeck(playerStats.currentDeck);
+    
+    // Create deck analysis embed
+    const analysisEmbed = embedBuilder.createDeckAnalysisEmbed(deckAnalysis, playerStats, message.author);
+    
+    // Create action row with buttons
+    const actionRow = embedBuilder.createActionRow();
+    
+    await message.reply({ 
+      embeds: [analysisEmbed],
+      components: [actionRow]
+    });
+    
   } catch (error) {
     const errorEmbed = embedBuilder.createErrorEmbed(error, message.author);
     await message.reply({ embeds: [errorEmbed] });
@@ -575,6 +651,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
           await handleDeckButton(interaction);
           break;
 
+        case 'analyze_deck':
+          await handleAnalyzeDeckButton(interaction);
+          break;
+
         case 'compare_stats':
           await handleCompareButton(interaction);
           break;
@@ -601,6 +681,50 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 // Button handlers
+async function handleAnalyzeDeckButton(interaction) {
+  try {
+    // Check rate limit
+    checkRateLimit(interaction.user.id);
+    
+    if (!userManager.isUserLoggedIn(interaction.user.id)) {
+      const errorEmbed = embedBuilder.createErrorEmbed(
+        new Error('You are not logged in. Please login first with `!cr login <player_tag>`'),
+        interaction.user
+      );
+      await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+      return;
+    }
+
+    const playerTag = userManager.getUserPlayerTag(interaction.user.id);
+    const playerStats = await clashAPI.getPlayerStats(playerTag);
+    
+    // Check if player has a deck
+    if (!playerStats.currentDeck || playerStats.currentDeck.length === 0) {
+      const errorEmbed = embedBuilder.createErrorEmbed(
+        new Error('You do not have a current deck set.'),
+        interaction.user
+      );
+      await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+      return;
+    }
+
+    // Analyze the deck
+    const deckAnalysis = deckAnalyzer.analyzeDeck(playerStats.currentDeck);
+    
+    // Create deck analysis embed
+    const analysisEmbed = embedBuilder.createDeckAnalysisEmbed(deckAnalysis, playerStats, interaction.user);
+    
+    await interaction.reply({ 
+      embeds: [analysisEmbed],
+      ephemeral: true
+    });
+    
+  } catch (error) {
+    const errorEmbed = embedBuilder.createErrorEmbed(error, interaction.user);
+    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+  }
+}
+
 async function handleDeckButton(interaction) {
   try {
     // Check rate limit
