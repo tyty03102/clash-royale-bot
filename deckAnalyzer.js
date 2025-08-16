@@ -530,22 +530,25 @@ export class DeckAnalyzer {
       return this.generateLogBaitName(deck, evolutionCards, avgElixir);
     }
     
-    // Get key cards for naming (max 2 cards)
+    // Get key cards for naming
     const keyCards = this.getKeyCardsForNaming(deck);
     
     // Build the name components
     let nameComponents = [];
+    let usedCardNames = new Set();
     
     // Add evolution cards first if present
     if (evolutionCards.length > 0) {
       nameComponents.push(`Evo ${evolutionCards[0].name}`);
+      usedCardNames.add(evolutionCards[0].name);
     }
     
-    // Add key cards (max 2, avoid duplicates)
+    // Add key cards (max 2, avoid duplicates with evolution cards)
     const uniqueCardNames = [];
     keyCards.forEach(card => {
-      if (!uniqueCardNames.includes(card.name) && uniqueCardNames.length < 2) {
+      if (!usedCardNames.has(card.name) && uniqueCardNames.length < 2) {
         uniqueCardNames.push(card.name);
+        usedCardNames.add(card.name);
       }
     });
     nameComponents = nameComponents.concat(uniqueCardNames);
@@ -612,20 +615,25 @@ export class DeckAnalyzer {
     const winConditions = this.findWinCondition(deck);
     
     let keyCards = [];
+    let usedCardNames = new Set();
     
     // Add evolution cards first
-    keyCards = keyCards.concat(evolutionCards);
+    evolutionCards.forEach(card => {
+      keyCards.push(card);
+      usedCardNames.add(card.name);
+    });
     
     // Add win conditions (avoid duplicates with evolution cards)
     winConditions.forEach(wc => {
-      if (!keyCards.some(keyCard => keyCard.name === wc.name)) {
+      if (!usedCardNames.has(wc.name)) {
         keyCards.push(wc);
+        usedCardNames.add(wc.name);
       }
     });
     
     // Add unique cards (not common, not already included)
     const remainingCards = deck.filter(card => 
-      !keyCards.some(keyCard => keyCard.name === card.name) &&
+      !usedCardNames.has(card.name) &&
       !this.isCommonCard(card.name)
     );
     

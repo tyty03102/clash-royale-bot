@@ -290,17 +290,14 @@ async function handleDeckAnalysis(message, args) {
       currentDeck: recentDeckData.deck
     };
 
-    // Analyze the deck
-    const deckAnalysis = deckAnalyzer.analyzeDeck(recentDeckData.deck);
-    
-    // Create deck analysis embed
-    const analysisEmbed = embedBuilder.createDeckAnalysisEmbed(deckAnalysis, tempPlayerStats, message.author, deckSource);
+    // Create simple deck embed
+    const simpleDeckEmbed = embedBuilder.createSimpleDeckEmbed(tempPlayerStats, deckSource, message.author);
     
     // Create action row with buttons
     const actionRow = embedBuilder.createActionRow();
     
     await message.reply({ 
-      embeds: [analysisEmbed],
+      embeds: [simpleDeckEmbed],
       components: [actionRow]
     });
     

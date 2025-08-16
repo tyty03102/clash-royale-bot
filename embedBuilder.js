@@ -85,6 +85,44 @@ export class EmbedBuilder {
     return embed;
   }
 
+  // Create simple deck embed for deck check command
+  createSimpleDeckEmbed(playerStats, deckSource, discordUser = null) {
+    const embed = new DiscordEmbedBuilder()
+      .setColor(this.colors.INFO)
+      .setTitle(`🃏 ${playerStats.name}'s ${deckSource}`)
+      .setThumbnail('https://api-assets.clashroyale.com/cards/300/CoZdp5PpsTH858l212lAMeJxVJ0zxv9V-f5xC8Bvj5g.png');
+
+    const deck = playerStats.currentDeck || [];
+    if (deck.length > 0) {
+      // Simple card list with evolution indicators
+      let cardList = '';
+      deck.forEach((card, index) => {
+        const evolutionText = card.evolutionLevel ? ' ⭐' : '';
+        cardList += `${index + 1}. **${card.name}**${evolutionText}\n`;
+      });
+
+      embed.addFields({
+        name: '📋 **Cards**',
+        value: cardList,
+        inline: false
+      });
+    } else {
+      embed.addFields({
+        name: '❌ **No Deck Found**',
+        value: 'This player does not have a deck.',
+        inline: false
+      });
+    }
+
+    embed.setFooter({ 
+      text: discordUser ? `Requested by ${discordUser.username}` : 'Deck Check',
+      iconURL: discordUser ? discordUser.displayAvatarURL() : null
+    })
+    .setTimestamp();
+
+    return embed;
+  }
+
   // Create enhanced deck embed that looks more like the image
   createDeckEmbed(playerStats, discordUser = null) {
     const embed = new DiscordEmbedBuilder()
