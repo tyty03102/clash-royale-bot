@@ -802,17 +802,42 @@ async function handleDeckButton(interaction) {
     const playerTag = userManager.getUserPlayerTag(interaction.user.id);
     const playerStats = await clashAPI.getPlayerStats(playerTag);
     
-    // Generate deck image
-    const deckImage = await deckImageGenerator.generateDeckImage(playerStats);
+    // Get the most recent deck from battle logs
+    let recentDeckData;
+    let deckSource = 'Current Deck';
+    
+    try {
+      recentDeckData = await clashAPI.getMostRecentDeck(playerTag);
+      deckSource = `Most Recent Deck (${recentDeckData.gameMode})`;
+    } catch (error) {
+      console.log('Could not get recent deck, using current deck:', error.message);
+      // Fall back to current deck if no recent deck found
+      if (!playerStats.currentDeck || playerStats.currentDeck.length === 0) {
+        const errorEmbed = embedBuilder.createErrorEmbed(
+          new Error('No deck found for this player.'),
+          interaction.user
+        );
+        await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+        return;
+      }
+      recentDeckData = { deck: playerStats.currentDeck };
+    }
+    
+    // Create a temporary player stats object with the recent deck
+    const tempPlayerStats = {
+      ...playerStats,
+      currentDeck: recentDeckData.deck
+    };
+    
+    // Generate deck image with the most recent deck
+    const deckImage = await deckImageGenerator.generateDeckImage(tempPlayerStats);
     
     // Create action row with buttons
     const actionRow = embedBuilder.createActionRow();
     
-
-    
     // Send the PNG image as an attachment with just buttons
     await interaction.reply({
-      content: `🃏 **${playerStats.name}'s Current Deck**`,
+      content: `🃏 **${playerStats.name}'s ${deckSource}**`,
       components: [actionRow],
       files: [{
         attachment: deckImage.filepath,
