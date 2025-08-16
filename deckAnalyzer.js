@@ -182,7 +182,7 @@ export class DeckAnalyzer {
       'Royal Recruits', 'Royal Hogs', 'Zappies', 'Flying Machine', 'Goblin Cage',
       'Witch', 'Graveyard', 'Goblin Hut', 'Valkyrie', 'Wall Breakers', 'Dart Goblin',
       'Royal Giant', 'Hunter', 'Royal Ghost', 'Furnace', 'Berserker', 'Lumberjack',
-      'Electro Dragon', 'Balloon', 'Bowler', 'Inferno Dragon', 'Freeze'
+      'Electro Dragon', 'Balloon', 'Bowler', 'Inferno Dragon', 'Freeze', 'Furnace'
     ];
     return deck.filter(card => currentMetaCards.includes(card.name));
   }

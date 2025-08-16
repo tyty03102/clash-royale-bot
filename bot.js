@@ -5,6 +5,7 @@ import { UserManager } from './userManager.js';
 import { EmbedBuilder } from './embedBuilder.js';
 import { DeckImageGenerator } from './deckImageGenerator.js';
 import { DeckAnalyzer } from './deckAnalyzer.js';
+import { ApiUsageTracker } from './apiUsageTracker.js';
 import fs from 'fs';
 
 // Create Discord client
@@ -22,6 +23,7 @@ const userManager = new UserManager();
 const embedBuilder = new EmbedBuilder();
 const deckImageGenerator = new DeckImageGenerator();
 const deckAnalyzer = new DeckAnalyzer();
+const apiUsageTracker = new ApiUsageTracker();
 
 // Rate limiting
 const rateLimits = new Map(); // userId -> { count: number, resetTime: number }
@@ -112,6 +114,9 @@ async function handleCommand(message, command, args) {
       break;
     case 'adminlink':
       await handleAdminLink(message, args);
+      break;
+    case 'apistats':
+      await handleApiStats(message);
       break;
     default:
       const errorEmbed = embedBuilder.createErrorEmbed(
@@ -209,6 +214,7 @@ async function handleStats(message, args) {
     checkRateLimit(message.author.id);
     
     const playerStats = await clashAPI.getPlayerStats(playerTag);
+    apiUsageTracker.incrementRequest();
     const statsEmbed = embedBuilder.createPlayerStatsEmbed(playerStats, message.author);
     const actionRow = embedBuilder.createActionRow();
     
@@ -262,39 +268,13 @@ async function handleDeckAnalysis(message, args) {
     checkRateLimit(message.author.id);
     
     const playerStats = await clashAPI.getPlayerStats(playerTag);
-    
-    // Get the most recent deck from battle logs
-    let recentDeckData;
-    let deckSource = 'Current Deck';
-    
-    try {
-      recentDeckData = await clashAPI.getMostRecentDeck(playerTag);
-      deckSource = `Most Recent Deck (${recentDeckData.gameMode})`;
-    } catch (error) {
-      console.log('Could not get recent deck, using current deck:', error.message);
-      // Fall back to current deck if no recent deck found
-      if (!playerStats.currentDeck || playerStats.currentDeck.length === 0) {
-        const errorEmbed = embedBuilder.createErrorEmbed(
-          new Error('No deck found for this player.'),
-          message.author
-        );
-        await message.reply({ embeds: [errorEmbed] });
-        return;
-      }
-      recentDeckData = { deck: playerStats.currentDeck };
-    }
-    
-    // Create a temporary player stats object with the recent deck
-    const tempPlayerStats = {
-      ...playerStats,
-      currentDeck: recentDeckData.deck
-    };
+    apiUsageTracker.incrementRequest();
 
     // Analyze the deck
-    const deckAnalysis = deckAnalyzer.analyzeDeck(recentDeckData.deck);
+    const deckAnalysis = deckAnalyzer.analyzeDeck(playerStats.currentDeck);
     
     // Create deck analysis embed
-    const analysisEmbed = embedBuilder.createDeckAnalysisEmbed(deckAnalysis, tempPlayerStats, message.author, deckSource);
+    const analysisEmbed = embedBuilder.createDeckAnalysisEmbed(deckAnalysis, playerStats, message.author, 'Current Deck');
     
     // Create action row with buttons
     const actionRow = embedBuilder.createActionRow();
@@ -350,43 +330,17 @@ async function handleDeck(message, args) {
     checkRateLimit(message.author.id);
     
     const playerStats = await clashAPI.getPlayerStats(playerTag);
-    
-    // Get the most recent deck from battle logs
-    let recentDeckData;
-    let deckSource = 'Current Deck';
-    
-    try {
-      recentDeckData = await clashAPI.getMostRecentDeck(playerTag);
-      deckSource = `Most Recent Deck (${recentDeckData.gameMode})`;
-    } catch (error) {
-      console.log('Could not get recent deck, using current deck:', error.message);
-      // Fall back to current deck if no recent deck found
-      if (!playerStats.currentDeck || playerStats.currentDeck.length === 0) {
-        const errorEmbed = embedBuilder.createErrorEmbed(
-          new Error('No deck found for this player.'),
-          message.author
-        );
-        await message.reply({ embeds: [errorEmbed] });
-        return;
-      }
-      recentDeckData = { deck: playerStats.currentDeck };
-    }
-    
-    // Create a temporary player stats object with the recent deck
-    const tempPlayerStats = {
-      ...playerStats,
-      currentDeck: recentDeckData.deck
-    };
+    apiUsageTracker.incrementRequest();
     
     // Generate deck image
-    const deckImage = await deckImageGenerator.generateDeckImage(tempPlayerStats);
+    const deckImage = await deckImageGenerator.generateDeckImage(playerStats);
     
     // Create action row with buttons
     const actionRow = embedBuilder.createActionRow();
     
     // Send the PNG image as an attachment with just buttons
     await message.reply({
-      content: `🃏 **${playerStats.name}'s ${deckSource}**`,
+      content: `🃏 **${playerStats.name}'s Current Deck**`,
       components: [actionRow],
       files: [{
         attachment: deckImage.filepath,
@@ -464,7 +418,9 @@ async function handleCompare(message, args) {
       const mentionedPlayerTag = userManager.getUserPlayerTag(mentionedUser.id);
       
       player1Stats = await clashAPI.getPlayerStats(userPlayerTag);
+      apiUsageTracker.incrementRequest();
       player2Stats = await clashAPI.getPlayerStats(mentionedPlayerTag);
+      apiUsageTracker.incrementRequest();
       player1DiscordUser = message.author;
       player2DiscordUser = mentionedUser;
     } else if (args.length === 2) {
@@ -506,7 +462,9 @@ async function handleCompare(message, args) {
       const player2Tag = userManager.getUserPlayerTag(user2.id);
       
       player1Stats = await clashAPI.getPlayerStats(player1Tag);
+      apiUsageTracker.incrementRequest();
       player2Stats = await clashAPI.getPlayerStats(player2Tag);
+      apiUsageTracker.incrementRequest();
       player1DiscordUser = user1;
       player2DiscordUser = user2;
     } else {
@@ -740,39 +698,13 @@ async function handleAnalyzeDeckButton(interaction) {
 
     const playerTag = userManager.getUserPlayerTag(interaction.user.id);
     const playerStats = await clashAPI.getPlayerStats(playerTag);
-    
-    // Get the most recent deck from battle logs
-    let recentDeckData;
-    let deckSource = 'Current Deck';
-    
-    try {
-      recentDeckData = await clashAPI.getMostRecentDeck(playerTag);
-      deckSource = `Most Recent Deck (${recentDeckData.gameMode})`;
-    } catch (error) {
-      console.log('Could not get recent deck, using current deck:', error.message);
-      // Fall back to current deck if no recent deck found
-      if (!playerStats.currentDeck || playerStats.currentDeck.length === 0) {
-        const errorEmbed = embedBuilder.createErrorEmbed(
-          new Error('You do not have a current deck set.'),
-          interaction.user
-        );
-        await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-        return;
-      }
-      recentDeckData = { deck: playerStats.currentDeck };
-    }
-    
-    // Create a temporary player stats object with the recent deck
-    const tempPlayerStats = {
-      ...playerStats,
-      currentDeck: recentDeckData.deck
-    };
+    apiUsageTracker.incrementRequest();
 
     // Analyze the deck
-    const deckAnalysis = deckAnalyzer.analyzeDeck(recentDeckData.deck);
+    const deckAnalysis = deckAnalyzer.analyzeDeck(playerStats.currentDeck);
     
     // Create deck analysis embed
-    const analysisEmbed = embedBuilder.createDeckAnalysisEmbed(deckAnalysis, tempPlayerStats, interaction.user, deckSource);
+    const analysisEmbed = embedBuilder.createDeckAnalysisEmbed(deckAnalysis, playerStats, interaction.user, 'Current Deck');
     
     await interaction.reply({ 
       embeds: [analysisEmbed],
@@ -801,43 +733,17 @@ async function handleDeckButton(interaction) {
 
     const playerTag = userManager.getUserPlayerTag(interaction.user.id);
     const playerStats = await clashAPI.getPlayerStats(playerTag);
+    apiUsageTracker.incrementRequest();
     
-    // Get the most recent deck from battle logs
-    let recentDeckData;
-    let deckSource = 'Current Deck';
-    
-    try {
-      recentDeckData = await clashAPI.getMostRecentDeck(playerTag);
-      deckSource = `Most Recent Deck (${recentDeckData.gameMode})`;
-    } catch (error) {
-      console.log('Could not get recent deck, using current deck:', error.message);
-      // Fall back to current deck if no recent deck found
-      if (!playerStats.currentDeck || playerStats.currentDeck.length === 0) {
-        const errorEmbed = embedBuilder.createErrorEmbed(
-          new Error('No deck found for this player.'),
-          interaction.user
-        );
-        await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-        return;
-      }
-      recentDeckData = { deck: playerStats.currentDeck };
-    }
-    
-    // Create a temporary player stats object with the recent deck
-    const tempPlayerStats = {
-      ...playerStats,
-      currentDeck: recentDeckData.deck
-    };
-    
-    // Generate deck image with the most recent deck
-    const deckImage = await deckImageGenerator.generateDeckImage(tempPlayerStats);
+    // Generate deck image
+    const deckImage = await deckImageGenerator.generateDeckImage(playerStats);
     
     // Create action row with buttons
     const actionRow = embedBuilder.createActionRow();
     
     // Send the PNG image as an attachment with just buttons
     await interaction.reply({
-      content: `🃏 **${playerStats.name}'s ${deckSource}**`,
+      content: `🃏 **${playerStats.name}'s Current Deck**`,
       components: [actionRow],
       files: [{
         attachment: deckImage.filepath,
@@ -910,6 +816,7 @@ async function handleRefreshButton(interaction) {
 
     const playerTag = userManager.getUserPlayerTag(interaction.user.id);
     const playerStats = await clashAPI.getPlayerStats(playerTag);
+    apiUsageTracker.incrementRequest();
     const statsEmbed = embedBuilder.createPlayerStatsEmbed(playerStats, interaction.user);
     
     await interaction.reply({ embeds: [statsEmbed], ephemeral: true });
@@ -919,9 +826,31 @@ async function handleRefreshButton(interaction) {
   }
 }
 
+// API Stats command handler (admin only)
+async function handleApiStats(message) {
+  // Check admin permissions
+  if (!hasAdminPermission(message.member)) {
+    const errorEmbed = embedBuilder.createErrorEmbed(
+      new Error('You do not have permission to use this command. This command is restricted to administrators only.'),
+      message.author
+    );
+    await message.reply({ embeds: [errorEmbed] });
+    return;
+  }
 
-
-
+  try {
+    const usageData = apiUsageTracker.getAllUsageData();
+    const currentUsage = usageData.currentUsage;
+    const history = usageData.monthlyHistory;
+    
+    // Create API stats embed
+    const embed = embedBuilder.createApiStatsEmbed(currentUsage, history, message.author);
+    await message.reply({ embeds: [embed] });
+  } catch (error) {
+    const errorEmbed = embedBuilder.createErrorEmbed(error, message.author);
+    await message.reply({ embeds: [errorEmbed] });
+  }
+}
 
 // Rate limiting function
 function checkRateLimit(userId) {
@@ -987,6 +916,7 @@ async function handleBattles(message, args) {
     
     // Get battle log from the API
     const battleLog = await clashAPI.getBattleLog(playerTag);
+    apiUsageTracker.incrementRequest();
     
     if (!battleLog || battleLog.length === 0) {
       const errorEmbed = embedBuilder.createErrorEmbed(
@@ -1018,6 +948,7 @@ async function handleChallenges(message, args) {
     
     // Get available challenges from the API
     const challenges = await clashAPI.getChallenges();
+    apiUsageTracker.incrementRequest();
     
     if (!challenges || challenges.length === 0) {
       const errorEmbed = embedBuilder.createErrorEmbed(
@@ -1111,7 +1042,9 @@ async function handleCompareModal(interaction) {
     const targetPlayerTag = userManager.getUserPlayerTag(targetUser.user.id);
     
     const player1Stats = await clashAPI.getPlayerStats(userPlayerTag);
+    apiUsageTracker.incrementRequest();
     const player2Stats = await clashAPI.getPlayerStats(targetPlayerTag);
+    apiUsageTracker.incrementRequest();
     
     const comparisonEmbed = embedBuilder.createComparisonEmbed(
       player1Stats, 

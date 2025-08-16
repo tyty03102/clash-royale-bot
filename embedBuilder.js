@@ -460,7 +460,7 @@ export class EmbedBuilder {
         { name: '🏆 **Challenges**', value: '`!cr challenges` - View currently available challenges', inline: false },
         { name: '⚔️ **Comparison**', value: '`!cr compare @username` - Compare your stats with another Discord user\n`!cr compare @user1 @user2` - Compare two Discord users', inline: false },
         { name: '👥 **Server**', value: '`!cr players` - List all logged in players in this server', inline: false },
-        { name: '💾 **Admin**', value: '`!cr save` - Save user data to file\n`!cr reload` - Reload user data from file\n`!cr adminlogin @username <player_tag>` - Force login a Discord user (Admin only)\n`!cr adminlink @username <player_tag>` - Link Discord user to shared Clash account (Admin only)', inline: false },
+        { name: '💾 **Admin**', value: '`!cr save` - Save user data to file\n`!cr reload` - Reload user data from file\n`!cr apistats` - View API usage statistics (Admin only)\n`!cr adminlogin @username <player_tag>` - Force login a Discord user (Admin only)\n`!cr adminlink @username <player_tag>` - Link Discord user to shared Clash account (Admin only)', inline: false },
         { name: '❓ **Help**', value: '`!cr help` - Show this help message', inline: false }
       )
       .addFields({
@@ -761,6 +761,52 @@ export class EmbedBuilder {
 
     embed.setFooter({ 
       text: discordUser ? `Requested by ${discordUser.username}` : 'Available Challenges',
+      iconURL: discordUser ? discordUser.displayAvatarURL() : null
+    })
+    .setTimestamp();
+
+    return embed;
+  }
+
+  // Create API stats embed
+  createApiStatsEmbed(currentUsage, history, discordUser = null) {
+    const embed = new DiscordEmbedBuilder()
+      .setColor(this.colors.INFO)
+      .setTitle('📊 API Usage Statistics')
+      .setDescription('Monthly API request tracking for Clash Royale API')
+      .setThumbnail('https://api-assets.clashroyale.com/cards/300/CoZdp5PpsTH858l212lAMeJxVJ0zxv9V-f5xC8Bvj5g.png');
+
+    // Current month stats
+    const lastResetDate = new Date(currentUsage.lastReset);
+    const formattedLastReset = `<t:${Math.floor(lastResetDate.getTime() / 1000)}:R>`;
+    
+    embed.addFields({
+      name: `📈 **Current Month (${currentUsage.month})**`,
+      value: `🔢 **Total Requests:** ${currentUsage.requests.toLocaleString()}\n⏰ **Last Reset:** ${formattedLastReset}`,
+      inline: false
+    });
+
+    // Historical data
+    if (Object.keys(history).length > 0) {
+      let historyText = '';
+      const sortedMonths = Object.keys(history).sort().reverse();
+      
+      sortedMonths.slice(0, 5).forEach(month => {
+        const monthData = history[month];
+        const monthDate = new Date(monthData.lastReset);
+        const formattedMonthDate = `<t:${Math.floor(monthDate.getTime() / 1000)}:D>`;
+        historyText += `📅 **${month}:** ${monthData.requests.toLocaleString()} requests (${formattedMonthDate})\n`;
+      });
+      
+      embed.addFields({
+        name: '📚 **Monthly History**',
+        value: historyText || 'No historical data available',
+        inline: false
+      });
+    }
+
+    embed.setFooter({ 
+      text: discordUser ? `Requested by ${discordUser.username}` : 'API Usage Statistics',
       iconURL: discordUser ? discordUser.displayAvatarURL() : null
     })
     .setTimestamp();
