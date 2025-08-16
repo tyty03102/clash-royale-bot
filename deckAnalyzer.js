@@ -524,10 +524,13 @@ export class DeckAnalyzer {
     const archetype = this.determineArchetype(deck);
     const avgElixir = parseFloat(this.calculateAverageElixir(deck));
     const evolutionCards = this.findEvolutionCards(deck);
-    const winConditions = this.findWinCondition(deck);
-    const spells = this.findSpells(deck);
     
-    // Get key cards for naming
+    // Check for specific deck types first
+    if (this.isLogBaitDeck(deck)) {
+      return this.generateLogBaitName(deck, evolutionCards, avgElixir);
+    }
+    
+    // Get key cards for naming (max 2 cards)
     const keyCards = this.getKeyCardsForNaming(deck);
     
     // Build the name components
@@ -535,64 +538,98 @@ export class DeckAnalyzer {
     
     // Add evolution cards first if present
     if (evolutionCards.length > 0) {
-      const evoCardNames = evolutionCards.map(card => card.name);
-      nameComponents.push(`Evo ${evoCardNames[0]}`);
+      nameComponents.push(`Evo ${evolutionCards[0].name}`);
     }
     
-    // Add key cards (up to 3)
-    const cardNames = keyCards.slice(0, 3).map(card => card.name);
-    nameComponents = nameComponents.concat(cardNames);
+    // Add key cards (max 2, avoid duplicates)
+    const uniqueCardNames = [];
+    keyCards.forEach(card => {
+      if (!uniqueCardNames.includes(card.name) && uniqueCardNames.length < 2) {
+        uniqueCardNames.push(card.name);
+      }
+    });
+    nameComponents = nameComponents.concat(uniqueCardNames);
     
-    // Add elixir cost if it's notable
-    if (avgElixir <= 3.2) {
+    // Add elixir cost if it's notable (≤3.0)
+    if (avgElixir <= 3.0) {
       nameComponents.push(`${avgElixir.toFixed(1)}`);
     }
     
-    // Add archetype
-    nameComponents.push(archetype);
-    
-    // Add special modifiers
-    const modifiers = this.getDeckModifiers(deck);
-    if (modifiers.length > 0) {
-      nameComponents.push(modifiers[0]); // Use first modifier
+    // Add archetype (but not if it's already a specific type)
+    if (!this.isLogBaitDeck(deck)) {
+      nameComponents.push(archetype);
     }
     
     return nameComponents.join(' ');
+  }
+
+  // Generate specific name for log bait decks
+  generateLogBaitName(deck, evolutionCards, avgElixir) {
+    let nameComponents = [];
+    
+    // Add evolution cards first if present
+    if (evolutionCards.length > 0) {
+      nameComponents.push(`Evo ${evolutionCards[0].name}`);
+    }
+    
+    // Add key log bait cards (max 2, excluding evolution cards)
+    const logBaitCards = this.getLogBaitKeyCards(deck);
+    const uniqueCardNames = [];
+    logBaitCards.forEach(card => {
+      if (!uniqueCardNames.includes(card.name) && 
+          uniqueCardNames.length < 2 && 
+          !(evolutionCards.length > 0 && card.name === evolutionCards[0].name)) {
+        uniqueCardNames.push(card.name);
+      }
+    });
+    nameComponents = nameComponents.concat(uniqueCardNames);
+    
+    // Add elixir cost if it's cycle (≤3.0)
+    if (avgElixir <= 3.0) {
+      nameComponents.push(`${avgElixir.toFixed(1)}`);
+    }
+    
+    // Add "Log Bait" at the end
+    nameComponents.push('Log Bait');
+    
+    return nameComponents.join(' ');
+  }
+
+  // Get key cards specifically for log bait naming
+  getLogBaitKeyCards(deck) {
+    const logBaitPriority = [
+      'Goblin Barrel', 'Princess', 'Dart Goblin', 'Firecracker',
+      'Goblin Gang', 'Skeleton Barrel', 'Goblins'
+    ];
+    
+    return deck.filter(card => logBaitPriority.includes(card.name))
+      .sort((a, b) => logBaitPriority.indexOf(a.name) - logBaitPriority.indexOf(b.name));
   }
 
   // Get key cards for deck naming (prioritizes win conditions, evolution cards, and unique cards)
   getKeyCardsForNaming(deck) {
     const evolutionCards = this.findEvolutionCards(deck);
     const winConditions = this.findWinCondition(deck);
-    const spells = this.findSpells(deck);
     
     let keyCards = [];
     
     // Add evolution cards first
     keyCards = keyCards.concat(evolutionCards);
     
-    // Add win conditions
-    keyCards = keyCards.concat(winConditions);
+    // Add win conditions (avoid duplicates with evolution cards)
+    winConditions.forEach(wc => {
+      if (!keyCards.some(keyCard => keyCard.name === wc.name)) {
+        keyCards.push(wc);
+      }
+    });
     
-    // Add unique spells or support cards
+    // Add unique cards (not common, not already included)
     const remainingCards = deck.filter(card => 
-      !keyCards.some(keyCard => keyCard.name === card.name)
-    );
-    
-    // Prioritize unique cards (not in keyCards yet)
-    const uniqueCards = remainingCards.filter(card => 
+      !keyCards.some(keyCard => keyCard.name === card.name) &&
       !this.isCommonCard(card.name)
     );
     
-    keyCards = keyCards.concat(uniqueCards);
-    
-    // If we still need more cards, add from remaining
-    if (keyCards.length < 3) {
-      const moreCards = remainingCards.filter(card => 
-        !keyCards.some(keyCard => keyCard.name === card.name)
-      );
-      keyCards = keyCards.concat(moreCards);
-    }
+    keyCards = keyCards.concat(remainingCards);
     
     return keyCards;
   }
@@ -646,7 +683,25 @@ export class DeckAnalyzer {
     return modifiers;
   }
 
-  // Check if deck is a bait deck
+  // Check if deck is a log bait deck (more specific detection)
+  isLogBaitDeck(deck) {
+    const hasGoblinBarrel = deck.some(card => card.name === 'Goblin Barrel');
+    const hasShooter = deck.some(card => ['Princess', 'Dart Goblin', 'Archers', 'Firecracker', 'Musketeer'].includes(card.name));
+    const hasGoblinGang = deck.some(card => card.name === 'Goblin Gang');
+    const hasLog = deck.some(card => card.name === 'The Log');
+    const hasFastCycle = deck.some(card => ['Ice Spirit', 'Skeletons', 'Electro Spirit'].includes(card.name));
+    const hasBuilding = deck.some(card => ['Cannon', 'Tesla', 'Inferno Tower', 'Goblin Cage'].includes(card.name));
+    const hasHighDamageSpell = deck.some(card => ['Rocket', 'Fireball', 'Lightning'].includes(card.name));
+    
+    // Log bait needs: Goblin Barrel + Shooter + Goblin Gang + Log + Fast Cycle + Building + High Damage Spell
+    // But we'll be more flexible - at least 6 out of 7 components
+    const components = [hasGoblinBarrel, hasShooter, hasGoblinGang, hasLog, hasFastCycle, hasBuilding, hasHighDamageSpell];
+    const componentCount = components.filter(Boolean).length;
+    
+    return hasGoblinBarrel && componentCount >= 6; // Must have Goblin Barrel and at least 6 components
+  }
+
+  // Check if deck is a bait deck (general)
   isBaitDeck(deck) {
     const baitCards = ['Goblin Barrel', 'Princess', 'Dart Goblin', 'Goblin Gang', 'Skeleton Barrel'];
     const baitCount = deck.filter(card => baitCards.includes(card.name)).length;

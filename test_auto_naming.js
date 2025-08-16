@@ -63,6 +63,30 @@ const xbowSiegeDeck = [
   { name: 'The Log', elixirCost: 2, evolutionLevel: 0 }
 ];
 
+// Test deck 6: Non-Log Bait (missing The Log)
+const nonLogBaitDeck = [
+  { name: 'Goblin Barrel', elixirCost: 3, evolutionLevel: 0 },
+  { name: 'Knight', elixirCost: 3, evolutionLevel: 0 },
+  { name: 'Princess', elixirCost: 3, evolutionLevel: 0 },
+  { name: 'Goblin Gang', elixirCost: 3, evolutionLevel: 0 },
+  { name: 'Ice Spirit', elixirCost: 1, evolutionLevel: 0 },
+  { name: 'Cannon', elixirCost: 3, evolutionLevel: 0 },
+  { name: 'Zap', elixirCost: 2, evolutionLevel: 0 },
+  { name: 'Fireball', elixirCost: 4, evolutionLevel: 0 }
+];
+
+// Test deck 7: Proper Log Bait with The Log
+const properLogBaitDeck = [
+  { name: 'Goblin Barrel', elixirCost: 3, evolutionLevel: 0 },
+  { name: 'Knight', elixirCost: 3, evolutionLevel: 0 },
+  { name: 'Princess', elixirCost: 3, evolutionLevel: 0 },
+  { name: 'Goblin Gang', elixirCost: 3, evolutionLevel: 0 },
+  { name: 'Ice Spirit', elixirCost: 1, evolutionLevel: 0 },
+  { name: 'Cannon', elixirCost: 3, evolutionLevel: 0 },
+  { name: 'The Log', elixirCost: 2, evolutionLevel: 0 },
+  { name: 'Rocket', elixirCost: 6, evolutionLevel: 0 }
+];
+
 console.log('🎯 **Auto-Generated Deck Names Test**\n');
 
 // Test each deck
@@ -71,7 +95,9 @@ const testDecks = [
   { name: 'Evo Archers Control', deck: evoArchersDeck },
   { name: 'Hog Cycle', deck: hogCycleDeck },
   { name: 'Golem Beatdown', deck: golemBeatdownDeck },
-  { name: 'X-Bow Siege', deck: xbowSiegeDeck }
+  { name: 'X-Bow Siege', deck: xbowSiegeDeck },
+  { name: 'Non-Log Bait', deck: nonLogBaitDeck },
+  { name: 'Proper Log Bait', deck: properLogBaitDeck }
 ];
 
 testDecks.forEach(({ name, deck }) => {
@@ -88,10 +114,10 @@ testDecks.forEach(({ name, deck }) => {
   }
 });
 
-console.log('✨ **Auto-Generation Features:**');
+console.log('✨ **Improved Auto-Generation Features:**');
+console.log('• Concise names (max 2 key cards + evolution + archetype)');
+console.log('• Accurate log bait detection (Goblin Barrel + Shooter + Goblin Gang + Log + Fast Cycle + Building + High Damage Spell)');
 console.log('• Evolution cards are prioritized in naming');
-console.log('• Key cards (win conditions, unique cards) are included');
-console.log('• Elixir cost is added for cycle decks (≤3.2)');
-console.log('• Archetype is automatically detected and included');
-console.log('• Special modifiers (Bait, Control, etc.) are added');
+console.log('• Elixir cost is added for cycle decks (≤3.0)');
+console.log('• Duplicate card names are avoided');
 console.log('• Common cards (Zap, Log, etc.) are deprioritized');
