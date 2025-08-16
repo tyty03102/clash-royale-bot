@@ -1,6 +1,6 @@
 export class DeckAnalyzer {
   constructor() {
-    // Card database with meta information (updated with all cards from cards_output.json)
+    // Card database (updated with all cards from cards_output.json)
     this.cardDatabase = {
       // Win conditions
       winConditions: [
@@ -96,7 +96,7 @@ export class DeckAnalyzer {
       }
     };
 
-    // Common deck synergies (updated with current meta and all cards)
+    // Common deck synergies (updated with all cards)
     this.synergies = {
       'Giant': ['Witch', 'Wizard', 'Musketeer', 'Baby Dragon', 'Mega Minion'],
       'Golem': ['Night Witch', 'Baby Dragon', 'Mega Minion', 'Lumberjack'],
@@ -143,7 +143,6 @@ export class DeckAnalyzer {
       strengths: this.analyzeStrengths(deck),
       weaknesses: this.analyzeWeaknesses(deck),
       recommendations: this.generateRecommendations(deck),
-      metaScore: this.calculateMetaScore(deck),
       rating: this.rateDeck(deck)
     };
 
@@ -175,17 +174,7 @@ export class DeckAnalyzer {
     return deck.filter(card => card.evolutionLevel && card.evolutionLevel > 0);
   }
 
-  findMetaCards(deck) {
-    // Current meta cards based on August 2025 balance changes (established meta only)
-    const currentMetaCards = [
-      'Goblin Giant', 'Sparky', 'Elite Barbarians', 'Archers', 'Tesla', 'X-Bow',
-      'Royal Recruits', 'Royal Hogs', 'Zappies', 'Flying Machine', 'Goblin Cage',
-      'Witch', 'Graveyard', 'Goblin Hut', 'Valkyrie', 'Wall Breakers', 'Dart Goblin',
-      'Royal Giant', 'Hunter', 'Royal Ghost', 'Furnace', 'Berserker', 'Lumberjack',
-      'Electro Dragon', 'Balloon', 'Bowler', 'Inferno Dragon', 'Freeze', 'Furnace'
-    ];
-    return deck.filter(card => currentMetaCards.includes(card.name));
-  }
+
 
   determineArchetype(deck) {
     const avgElixir = parseFloat(this.calculateAverageElixir(deck));
@@ -270,12 +259,6 @@ export class DeckAnalyzer {
     const evolutionCards = this.findEvolutionCards(deck);
     if (evolutionCards.length > 0) {
       strengths.push(`✅ Has ${evolutionCards.length} evolution card(s): ${evolutionCards.map(c => c.name).join(', ')}`);
-    }
-
-    // Check for meta relevance
-    const metaCards = this.findMetaCards(deck);
-    if (metaCards.length >= 3) {
-      strengths.push(`✅ Good meta relevance with ${metaCards.length} current meta cards`);
     }
 
     return strengths;
@@ -401,15 +384,7 @@ export class DeckAnalyzer {
       });
     }
 
-    // Meta recommendations
-    const metaCards = this.findMetaCards(deck);
-    if (metaCards.length < 3) {
-      recommendations.push({
-        type: 'meta',
-        message: 'Add more current meta cards for better competitive performance',
-        priority: 'medium'
-      });
-    }
+
 
     // Specific meta deck recommendations
     const deckWinConditions = this.findWinCondition(deck);
@@ -468,10 +443,6 @@ export class DeckAnalyzer {
     const evolutionCards = this.findEvolutionCards(deck);
     score += evolutionCards.length * 8;
 
-    // Bonus for current meta cards
-    const metaCards = this.findMetaCards(deck);
-    score += metaCards.length * 5;
-
     return Math.min(100, score);
   }
 
@@ -510,7 +481,7 @@ export class DeckAnalyzer {
 
   getRatingDescription(rating) {
     const descriptions = {
-      'S': 'Excellent deck with great synergies and meta relevance',
+      'S': 'Excellent deck with great synergies and composition',
       'A': 'Very good deck with solid composition and few weaknesses',
       'B': 'Good deck that could benefit from some improvements',
       'C': 'Average deck with several areas for improvement',

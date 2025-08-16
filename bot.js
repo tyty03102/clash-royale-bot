@@ -109,6 +109,9 @@ async function handleCommand(message, command, args) {
     case 'challenges':
       await handleChallenges(message, args);
       break;
+    case 'meta':
+      await handleMeta(message, args);
+      break;
     case 'adminlogin':
       await handleAdminLogin(message, args);
       break;
@@ -537,6 +540,22 @@ async function handleReload(message) {
     const loggedInUsers = userManager.getAllLoggedInUsers();
     const successEmbed = embedBuilder.createSuccessEmbed(`User data reloaded successfully! ${loggedInUsers.length} user(s) loaded.`, message.author);
     await message.reply({ embeds: [successEmbed] });
+  } catch (error) {
+    const errorEmbed = embedBuilder.createErrorEmbed(error, message.author);
+    await message.reply({ embeds: [errorEmbed] });
+  }
+}
+
+// Meta command handler
+async function handleMeta(message, args) {
+  try {
+    // Check rate limit
+    checkRateLimit(message.author.id);
+    
+    const metaDecks = deckAnalyzer.getMetaDecks();
+    const metaEmbed = embedBuilder.createMetaDecksEmbed(metaDecks, message.author);
+    await message.reply({ embeds: [metaEmbed] });
+    
   } catch (error) {
     const errorEmbed = embedBuilder.createErrorEmbed(error, message.author);
     await message.reply({ embeds: [errorEmbed] });

@@ -159,7 +159,7 @@ export class EmbedBuilder {
     const stars = '⭐'.repeat(deckAnalysis.rating.stars);
     embed.addFields({
       name: `🏆 **Deck Rating: ${deckAnalysis.rating.rating}** ${stars}`,
-      value: `**Meta Score:** ${deckAnalysis.metaScore}/100\n**${deckAnalysis.rating.description}**`,
+      value: `**${deckAnalysis.rating.description}**`,
       inline: false
     });
 
@@ -458,6 +458,7 @@ export class EmbedBuilder {
         { name: '📊 **Stats**', value: '`!cr stats` - View your stats\n`!cr stats <player_tag>` - View any player\'s stats\n`!cr stats @username` - View logged-in Discord user\'s stats\n`!cr deck` - Generate deck image\n`!cr deck <player_tag>` - Generate deck image for any player\n`!cr deck @username` - Generate deck image for Discord user\n`!cr deck check` - Analyze deck with recommendations\n`!cr deck check <player_tag>` - Analyze any player\'s deck\n`!cr deck check @username` - Analyze Discord user\'s deck', inline: false },
         { name: '⚔️ **Battle Log**', value: '`!cr battles` - View your 5 most recent battles\n`!cr battles <player_tag>` - View any player\'s battles\n`!cr battles @username` - View logged-in Discord user\'s battles', inline: false },
         { name: '🏆 **Challenges**', value: '`!cr challenges` - View currently available challenges', inline: false },
+        { name: '🏆 **Meta Decks**', value: '`!cr meta` - View current meta decks', inline: false },
         { name: '⚔️ **Comparison**', value: '`!cr compare @username` - Compare your stats with another Discord user\n`!cr compare @user1 @user2` - Compare two Discord users', inline: false },
         { name: '👥 **Server**', value: '`!cr players` - List all logged in players in this server', inline: false },
         { name: '💾 **Admin**', value: '`!cr save` - Save user data to file\n`!cr reload` - Reload user data from file\n`!cr apistats` - View API usage statistics (Admin only)\n`!cr adminlogin @username <player_tag>` - Force login a Discord user (Admin only)\n`!cr adminlink @username <player_tag>` - Link Discord user to shared Clash account (Admin only)', inline: false },
@@ -807,6 +808,61 @@ export class EmbedBuilder {
 
     embed.setFooter({ 
       text: discordUser ? `Requested by ${discordUser.username}` : 'API Usage Statistics',
+      iconURL: discordUser ? discordUser.displayAvatarURL() : null
+    })
+    .setTimestamp();
+
+    return embed;
+  }
+
+  // Create meta decks embed
+  createMetaDecksEmbed(metaDecks, discordUser = null) {
+    const embed = new DiscordEmbedBuilder()
+      .setColor(this.colors.INFO)
+      .setTitle('🏆 Current Meta Decks')
+      .setDescription('Top performing decks in the current meta (August 2025)')
+      .setThumbnail('https://api-assets.clashroyale.com/cards/300/CoZdp5PpsTH858l212lAMeJxVJ0zxv9V-f5xC8Bvj5g.png');
+
+    // Group decks by rating
+    const topMeta = metaDecks.filter(deck => deck.rating === 'S');
+    const currentMeta = metaDecks.filter(deck => deck.rating === 'A');
+
+    // Top Meta (S Tier)
+    if (topMeta.length > 0) {
+      let topMetaText = '';
+      topMeta.forEach((deck, index) => {
+        const stars = '⭐'.repeat(deck.rating === 'S' ? 5 : 4);
+        const cardsText = deck.cards.join(', ');
+        topMetaText += `**${index + 1}. ${deck.name}** ${stars}\n`;
+        topMetaText += `🎯 **${deck.archetype}** • 🃏 ${cardsText}\n\n`;
+      });
+      
+      embed.addFields({
+        name: '🥇 **Top Meta (S Tier)**',
+        value: topMetaText,
+        inline: false
+      });
+    }
+
+    // Current Meta (A Tier)
+    if (currentMeta.length > 0) {
+      let currentMetaText = '';
+      currentMeta.forEach((deck, index) => {
+        const stars = '⭐'.repeat(deck.rating === 'S' ? 5 : 4);
+        const cardsText = deck.cards.join(', ');
+        currentMetaText += `**${index + 1}. ${deck.name}** ${stars}\n`;
+        currentMetaText += `🎯 **${deck.archetype}** • 🃏 ${cardsText}\n\n`;
+      });
+      
+      embed.addFields({
+        name: '🥈 **Current Meta (A Tier)**',
+        value: currentMetaText,
+        inline: false
+      });
+    }
+
+    embed.setFooter({ 
+      text: discordUser ? `Requested by ${discordUser.username}` : 'Current Meta Decks',
       iconURL: discordUser ? discordUser.displayAvatarURL() : null
     })
     .setTimestamp();
