@@ -22,6 +22,7 @@ locations_output.json
 cards_output.json
 new-meta.devtools
 goblin-barrel,knight,archers,goblin-gang,ice-spirit,cannon,rocke.devtools
+deckcheck.devtools
 
 # Logs
 logs
