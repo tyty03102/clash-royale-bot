@@ -163,31 +163,6 @@ export class EmbedBuilder {
       inline: false
     });
 
-    // What is this deck?
-    let deckDescription = `This is a **${deckAnalysis.archetype}** deck with an average elixir cost of **${deckAnalysis.averageElixir}**. `;
-    
-    if (deckAnalysis.winCondition.length > 0) {
-      const winConditionNames = deckAnalysis.winCondition.map(wc => wc.name).join(', ');
-      deckDescription += `It uses **${winConditionNames}** as its primary win condition(s). `;
-    }
-    
-    if (deckAnalysis.evolutionCards && deckAnalysis.evolutionCards.length > 0) {
-      const evolutionNames = deckAnalysis.evolutionCards.map(ec => ec.name).join(', ');
-      deckDescription += `The deck features **${evolutionNames}** as evolution cards. `;
-    }
-    
-    if (deckAnalysis.metaCards && deckAnalysis.metaCards.length >= 3) {
-      deckDescription += `It includes **${deckAnalysis.metaCards.length} current meta cards**, making it well-positioned in the current meta.`;
-    } else {
-      deckDescription += `It's a solid deck that can perform well in various matchups.`;
-    }
-    
-    embed.addFields({
-      name: '📋 **What is this deck?**',
-      value: deckDescription,
-      inline: false
-    });
-
     // Deck composition
     const winConditions = deckAnalysis.winCondition.map(wc => wc.name).join(', ') || 'None';
     const spells = deckAnalysis.spells.map(s => s.name).join(', ') || 'None';
@@ -198,6 +173,18 @@ export class EmbedBuilder {
       { name: '⚡ **Spells**', value: spells, inline: true },
       { name: '🏗️ **Buildings**', value: buildings, inline: true }
     );
+
+    // All cards in deck
+    const allCards = deckAnalysis.deck.map(card => {
+      const evolutionText = card.evolutionLevel && card.evolutionLevel > 0 ? ' (Evo)' : '';
+      return `${card.name}${evolutionText}`;
+    }).join(', ');
+    
+    embed.addFields({
+      name: '🃏 **Deck Cards**',
+      value: allCards,
+      inline: false
+    });
 
     // Synergies
     if (deckAnalysis.synergies.length > 0) {
