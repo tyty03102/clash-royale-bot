@@ -25,12 +25,46 @@ const deckImageGenerator = new DeckImageGenerator();
 const deckAnalyzer = new DeckAnalyzer();
 const apiUsageTracker = new ApiUsageTracker();
 
+// Battle cache system for pagination
+const battleCache = new Map(); // playerTag -> { battles: [], timestamp: number, messageId: string }
+const BATTLE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const BATTLES_PER_PAGE = 5;
+
 // Rate limiting
 const rateLimits = new Map(); // userId -> { count: number, resetTime: number }
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 3; // Max 3 requests per minute per user
 
+// Cache management functions
+function getCachedBattles(playerTag) {
+  const cached = battleCache.get(playerTag);
+  if (!cached) return null;
+  
+  // Check if cache is still valid
+  if (Date.now() - cached.timestamp > BATTLE_CACHE_DURATION) {
+    battleCache.delete(playerTag);
+    return null;
+  }
+  
+  return cached.battles;
+}
 
+function setCachedBattles(playerTag, battles, messageId) {
+  battleCache.set(playerTag, {
+    battles: battles,
+    timestamp: Date.now(),
+    messageId: messageId
+  });
+}
+
+function clearExpiredCache() {
+  const now = Date.now();
+  for (const [playerTag, cached] of battleCache.entries()) {
+    if (now - cached.timestamp > BATTLE_CACHE_DURATION) {
+      battleCache.delete(playerTag);
+    }
+  }
+}
 
 // Command collection
 client.commands = new Collection();
@@ -666,6 +700,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (interaction.isButton()) {
       const { customId } = interaction;
       
+      // Handle pagination buttons
+      if (customId.startsWith('battles_')) {
+        await handleBattlePagination(interaction);
+        return;
+      }
+      
       switch (customId) {
         case 'view_deck':
           await handleDeckButton(interaction);
@@ -933,9 +973,14 @@ async function handleBattles(message, args) {
       }
     }
     
-    // Get battle log from the API
-    const battleLog = await clashAPI.getBattleLog(playerTag);
-    apiUsageTracker.incrementRequest();
+    // Check cache first
+    let battleLog = getCachedBattles(playerTag);
+    
+    if (!battleLog) {
+      // Cache miss - fetch from API
+      battleLog = await clashAPI.getBattleLog(playerTag);
+      apiUsageTracker.incrementRequest();
+    }
     
     if (!battleLog || battleLog.length === 0) {
       const errorEmbed = embedBuilder.createErrorEmbed(
@@ -946,12 +991,20 @@ async function handleBattles(message, args) {
       return;
     }
 
-    // Get the 5 most recent battles
-    const recentBattles = battleLog.slice(0, 5);
+    // Get the first page of battles
+    const pageBattles = battleLog.slice(0, BATTLES_PER_PAGE);
     
-    // Create battle log embed
-    const battleLogEmbed = embedBuilder.createBattleLogEmbed(recentBattles, message.author);
-    await message.reply({ embeds: [battleLogEmbed] });
+    // Create battle log embed with pagination
+    const battleLogEmbed = embedBuilder.createBattleLogEmbed(pageBattles, message.author, 1, Math.ceil(battleLog.length / BATTLES_PER_PAGE));
+    const actionRow = embedBuilder.createBattlePaginationRow(1, Math.ceil(battleLog.length / BATTLES_PER_PAGE), playerTag);
+    
+    const sentMessage = await message.reply({ 
+      embeds: [battleLogEmbed], 
+      components: [actionRow] 
+    });
+    
+    // Cache the battles with the message ID
+    setCachedBattles(playerTag, battleLog, sentMessage.id);
     
   } catch (error) {
     const errorEmbed = embedBuilder.createErrorEmbed(error, message.author);
@@ -1003,6 +1056,67 @@ function hasAdminPermission(member) {
   }
   
   return false;
+}
+
+// Battle pagination handler
+async function handleBattlePagination(interaction) {
+  try {
+    const { customId } = interaction;
+    const parts = customId.split('_');
+    const action = parts[1]; // 'next' or 'back'
+    const currentPage = parseInt(parts[2]);
+    const totalPages = parseInt(parts[3]);
+    const playerTag = parts[4];
+    
+    // Check rate limit
+    checkRateLimit(interaction.user.id);
+    
+    // Get cached battles
+    const battleLog = getCachedBattles(playerTag);
+    if (!battleLog) {
+      const errorEmbed = embedBuilder.createErrorEmbed(
+        new Error('Battle cache has expired. Please run `!cr battles` again.'),
+        interaction.user
+      );
+      await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+      return;
+    }
+    
+    // Calculate new page
+    let newPage = currentPage;
+    if (action === 'next' && currentPage < totalPages) {
+      newPage = currentPage + 1;
+    } else if (action === 'back' && currentPage > 1) {
+      newPage = currentPage - 1;
+    } else {
+      // Invalid page change, just acknowledge
+      await interaction.deferUpdate();
+      return;
+    }
+    
+    // Get battles for the new page
+    const startIndex = (newPage - 1) * BATTLES_PER_PAGE;
+    const endIndex = startIndex + BATTLES_PER_PAGE;
+    const pageBattles = battleLog.slice(startIndex, endIndex);
+    
+    // Create updated embed and buttons
+    const battleLogEmbed = embedBuilder.createBattleLogEmbed(pageBattles, interaction.user, newPage, totalPages);
+    const actionRow = embedBuilder.createBattlePaginationRow(newPage, totalPages, playerTag);
+    
+    // Update the message
+    await interaction.update({ 
+      embeds: [battleLogEmbed], 
+      components: [actionRow] 
+    });
+    
+  } catch (error) {
+    const errorEmbed = embedBuilder.createErrorEmbed(error, interaction.user);
+    if (interaction.replied || interaction.deferred) {
+      await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
+    } else {
+      await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    }
+  }
 }
 
 // Modal handler for compare

@@ -565,11 +565,11 @@ export class EmbedBuilder {
   }
 
   // Create battle log embed showing recent battles
-  createBattleLogEmbed(battles, discordUser = null) {
+  createBattleLogEmbed(battles, discordUser = null, currentPage = 1, totalPages = 1) {
     const embed = new DiscordEmbedBuilder()
       .setColor(this.colors.INFO)
       .setTitle('⚔️ Recent Battle Log')
-      .setDescription(`Showing the **5 most recent battles**`)
+      .setDescription(`Showing battles **${(currentPage - 1) * 5 + 1}-${Math.min(currentPage * 5, (currentPage - 1) * 5 + battles.length)}** of **${totalPages * 5}** (Page ${currentPage}/${totalPages})`)
       .setThumbnail('https://api-assets.clashroyale.com/arenas/54000009.png');
 
     if (!battles || battles.length === 0) {
@@ -580,12 +580,14 @@ export class EmbedBuilder {
       });
     } else {
       battles.forEach((battle, index) => {
-        // Fix timestamp parsing
+        // Fix timestamp parsing - battleTime is in ISO format
         let formattedTime = 'Unknown time';
         try {
-          const battleTime = new Date(battle.battleTime);
-          if (!isNaN(battleTime.getTime())) {
-            formattedTime = `<t:${Math.floor(battleTime.getTime() / 1000)}:R>`;
+          if (battle.battleTime) {
+            const battleTime = new Date(battle.battleTime);
+            if (!isNaN(battleTime.getTime())) {
+              formattedTime = `<t:${Math.floor(battleTime.getTime() / 1000)}:R>`;
+            }
           }
         } catch (error) {
           console.error('Error parsing battle time:', error);
@@ -608,8 +610,8 @@ export class EmbedBuilder {
           resultEmoji = '🔴';
         }
 
-        // Trophies info
-        const startingTrophies = player.startingTrophies ?? null;
+        // Enhanced trophy info
+        const startingTrophies = player.startingTrophies;
         const trophyChange = typeof player.trophyChange === 'number' ? player.trophyChange : null;
         const endingTrophies = (startingTrophies !== null && trophyChange !== null)
           ? startingTrophies + trophyChange
@@ -620,58 +622,67 @@ export class EmbedBuilder {
           ? `🏅 ${startingTrophies} → ${endingTrophies} (${trophyEmoji} ${trophyChangeText})`
           : `🏅 ${trophyEmoji} ${trophyChangeText}`;
 
-        // HP info - simplified
-        const playerKTHP = player.kingTowerHitPoints ?? '—';
-        const opponentKTHP = opponent.kingTowerHitPoints ?? '—';
-
-        // Cards summary - simplified
-        const playerDeckNames = Array.isArray(player.cards)
-          ? player.cards.map(c => c?.name).filter(Boolean).slice(0, 4).join(', ') + (player.cards.length > 4 ? '...' : '')
-          : '';
-
-        // Misc battle info
+        // Game mode and arena
         const modeName = battle.gameMode?.name || 'Unknown Mode';
         const arenaName = battle.arena?.name || 'Unknown Arena';
+        const isTournament = battle.isLadderTournament ? ' 🏆' : '';
 
-        const playerClan = player.clan?.name ? ` • ${player.clan.name}` : '';
-        const playerTag = player.tag ? ` (${player.tag})` : '';
-        const opponentTag = opponent.tag ? ` (${opponent.tag})` : '';
+        // Player names
+        const playerName = player.name || 'You';
+        const opponentName = opponent.name || 'Opponent';
 
+        // Enhanced HP info with princess towers
+        const playerKTHP = player.kingTowerHitPoints;
+        const opponentKTHP = opponent.kingTowerHitPoints;
+        const playerPrincessTowers = player.princessTowersHitPoints;
+        const opponentPrincessTowers = opponent.princessTowersHitPoints;
+
+        // Elixir efficiency
         const playerElixirLeaked = typeof player.elixirLeaked === 'number' ? player.elixirLeaked.toFixed(1) : null;
         const opponentElixirLeaked = typeof opponent.elixirLeaked === 'number' ? opponent.elixirLeaked.toFixed(1) : null;
 
-        // Create simplified battle summary
+        // Enhanced deck info with evolutions
+        const playerDeckInfo = Array.isArray(player.cards) 
+          ? player.cards.map(card => {
+              let cardText = card.name;
+              if (card.evolutionLevel > 0) cardText += '⭐';
+              if (card.starLevel > 0) cardText += '✨';
+              return cardText;
+            }).filter(Boolean).join(', ')
+          : '';
+
+
+
+        // Create enhanced battle summary
         const summaryLines = [
           `${resultEmoji} **${result}** (${playerCrowns}-${opponentCrowns})`,
           trophiesLine,
-          `🎮 ${modeName} • 🏟️ ${arenaName}`,
+          `🎮 ${modeName}${isTournament} • 🏟️ ${arenaName}`,
           `⏰ ${formattedTime}`,
-          `👤 ${player.name || 'You'}${playerTag}${playerClan}`,
-          `🆚 ${opponent.name || 'Opponent'}${opponentTag}`,
+          `👤 ${playerName} vs ${opponentName}`
         ];
 
-        // Add HP info if available
-        if (playerKTHP !== '—' || opponentKTHP !== '—') {
-          summaryLines.push(`💖 HP — You: ${playerKTHP} | Opp: ${opponentKTHP}`);
-        }
 
-        // Add elixir info if available
+
+        // Add elixir efficiency if available
         if (playerElixirLeaked !== null || opponentElixirLeaked !== null) {
           const elixirParts = [];
           if (playerElixirLeaked !== null) elixirParts.push(`You: ${playerElixirLeaked}`);
           if (opponentElixirLeaked !== null) elixirParts.push(`Opp: ${opponentElixirLeaked}`);
-          summaryLines.push(`🧪 Elixir leaked — ${elixirParts.join(' | ')}`);
+          summaryLines.push(`🧪 Elixir Leaked — ${elixirParts.join(' | ')}`);
         }
 
-        // Add deck info if available
-        if (playerDeckNames) {
-          summaryLines.push(`🃏 Deck: ${playerDeckNames}`);
+        // Add deck info
+        if (playerDeckInfo) {
+          summaryLines.push(`🃏 ${playerDeckInfo}`);
         }
+
+
 
         const battleSummary = summaryLines.join('\n');
 
         embed.addFields({
-          name: `Battle ${index + 1}: ${player.name || 'You'} vs ${opponent.name || 'Opponent'}`,
+          name: `Battle ${index + 1}: ${playerName} vs ${opponentName}`,
           value: battleSummary,
           inline: false
         });
@@ -897,5 +908,29 @@ export class EmbedBuilder {
           .setStyle(ButtonStyle.Success)
           .setEmoji('🔄')
       );
+  }
+
+  // Create action row with pagination buttons for battles
+  createBattlePaginationRow(currentPage, totalPages, playerTag) {
+    const row = new ActionRowBuilder();
+    
+    // Back button
+    const backButton = new ButtonBuilder()
+      .setCustomId(`battles_back_${currentPage}_${totalPages}_${playerTag}`)
+      .setLabel('Back')
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji('⬅️')
+      .setDisabled(currentPage <= 1);
+    
+    // Next button
+    const nextButton = new ButtonBuilder()
+      .setCustomId(`battles_next_${currentPage}_${totalPages}_${playerTag}`)
+      .setLabel('Next')
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji('➡️')
+      .setDisabled(currentPage >= totalPages);
+    
+    row.addComponents(backButton, nextButton);
+    return row;
   }
 }
