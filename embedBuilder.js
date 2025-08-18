@@ -580,11 +580,29 @@ export class EmbedBuilder {
       });
     } else {
       battles.forEach((battle, index) => {
-        // Fix timestamp parsing - battleTime is in ISO format
+        // Fix timestamp parsing - battleTime is in compact ISO format (20250812T000914.000Z)
         let formattedTime = 'Unknown time';
         try {
           if (battle.battleTime) {
-            const battleTime = new Date(battle.battleTime);
+            // Convert compact format to standard ISO format
+            // From: 20250812T000914.000Z
+            // To: 2025-08-12T00:09:14.000Z
+            let isoTime = battle.battleTime;
+            if (isoTime.match(/^\d{8}T\d{6}\.\d{3}Z$/)) {
+              // Format: YYYYMMDDTHHMMSS.mmmZ
+              const year = isoTime.substring(0, 4);
+              const month = isoTime.substring(4, 6);
+              const day = isoTime.substring(6, 8);
+              const time = isoTime.substring(9, 15); // HHMMSS
+              const hour = time.substring(0, 2);
+              const minute = time.substring(2, 4);
+              const second = time.substring(4, 6);
+              const millis = isoTime.substring(16, 19); // .mmm
+              
+              isoTime = `${year}-${month}-${day}T${hour}:${minute}:${second}.${millis}Z`;
+            }
+            
+            const battleTime = new Date(isoTime);
             if (!isNaN(battleTime.getTime())) {
               formattedTime = `<t:${Math.floor(battleTime.getTime() / 1000)}:R>`;
             }
