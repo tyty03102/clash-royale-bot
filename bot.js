@@ -1068,10 +1068,7 @@ async function handleBattlePagination(interaction) {
     const totalPages = parseInt(parts[3]);
     const playerTag = parts[4];
     
-    // Check rate limit
-    checkRateLimit(interaction.user.id);
-    
-    // Get cached battles
+    // Get cached battles (no rate limit check since we're using cached data)
     const battleLog = getCachedBattles(playerTag);
     if (!battleLog) {
       const errorEmbed = embedBuilder.createErrorEmbed(
